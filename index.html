@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Manager - Correction Visuelle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f0f12; color: #e0e0e0; font-family: 'Inter', sans-serif; font-size: 13px; }
+        .card { background: #1a1a1d; border: 1px solid #333; }
+        input, select, textarea { background: #252528 !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px; padding: 4px; }
+        .stat-box { text-align: center; background: #111; border: 1px solid #444; border-radius: 8px; padding: 5px; }
+        .bonus-tag { min-width: 32px; text-align: center; font-weight: bold; color: #fbbf24; font-size: 14px; }
+        .skill-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #222; }
+        .progress-bg { background: #333; height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; transition: width 0.4s ease, background-color 0.4s ease; }
+        .hidden { display: none; }
+        .atk-card { border-left: 4px solid #b91c1c; }
+        .cap-card { border-left: 4px solid #3b82f6; }
+        .desc-text { white-space: pre-line; word-wrap: break-word; }
+        .res-input { width: 35px; text-align: center; background: transparent !important; border: none !important; font-weight: bold; color: #3b82f6; font-size: 14px; padding: 0; }
+        .hp-input { width: 45px; text-align: center; background: transparent !important; border: none !important; font-weight: bold; font-size: 20px; }
+    </style>
+</head>
+<body class="p-4">
+
+<div id="app" class="max-w-7xl mx-auto card p-6 rounded-xl shadow-2xl border border-gray-800">
+    
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 border-b border-gray-700 pb-6">
+        <div class="md:col-span-2">
+            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Héros</label>
+            <input type="text" id="char-name" class="text-xl font-bold w-full text-red-500 bg-transparent border-none outline-none" value="Grog l'Imposant">
+        </div>
+        <div>
+            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Classe</label>
+            <select id="char-class" class="w-full h-8" onchange="applyClassSaves(); renderAll();">
+                <option value="Barbare">Barbare</option>
+                <option value="Guerrier">Guerrier</option>
+                <option value="Magicien">Magicien</option>
+                <option value="Roublard">Roublard</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[10px] uppercase text-gray-500 font-bold text-center mb-1">Niveau</label>
+            <input type="number" id="char-level" class="w-full h-8 text-center font-bold" value="5" oninput="updateLevel(this.value)">
+        </div>
+        <div class="stat-box flex flex-col justify-center border-blue-900/50 bg-blue-900/10 h-12 text-white font-black text-xl" id="passive-perception">13</div>
+        <div class="stat-box flex flex-col justify-center border-yellow-900/50 bg-yellow-900/10 h-12 text-white font-black text-xl" id="prof-bonus">+3</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-black/40 border border-gray-800 p-3 rounded-lg flex items-center justify-between">
+            <div>
+                <div class="text-[10px] uppercase text-gray-500 font-bold mb-1">Points de Vie</div>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="hp-cur" class="hp-input text-white" oninput="updateHP('cur', this.value)">
+                    <span class="text-2xl text-gray-600">/</span>
+                    <input type="number" id="hp-max" class="hp-input text-gray-400" oninput="updateHP('max', this.value)">
+                </div>
+            </div>
+            <div class="w-1/2">
+                <div class="progress-bg"><div id="hp-bar" class="progress-fill" style="width: 100%"></div></div>
+                <div id="hp-label" class="text-[9px] uppercase font-bold mt-1 text-right">En forme</div>
+            </div>
+        </div>
+        <div class="bg-black/40 border border-gray-800 p-3 rounded-lg flex items-center justify-between">
+            <div>
+                <div class="text-[10px] uppercase text-gray-500 font-bold mb-1">Dés de Vie</div>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="hd-cur" class="hp-input !text-blue-400" oninput="state.hd_cur=parseInt(this.value)||0; renderAll();">
+                    <span class="text-2xl text-gray-600">/</span>
+                    <span id="hd-max" class="text-2xl font-bold text-blue-400 px-2">5</span>
+                </div>
+            </div>
+            <button onclick="takeRest('court')" class="bg-blue-900/30 hover:bg-blue-800 text-blue-400 text-[10px] px-3 py-2 rounded font-bold uppercase border border-blue-900/50">Repos Court</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div>
+            <h3 class="font-bold text-red-500 uppercase text-[11px] mb-4 italic">Stats</h3>
+            <div id="stats-area" class="space-y-2 mb-8"></div>
+            <h3 class="font-bold text-green-500 uppercase text-[11px] mb-4 italic">Sauvegardes</h3>
+            <div id="saves-area" class="bg-black/20 p-2 rounded border border-gray-800"></div>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-1">
+                <h3 class="font-bold text-green-500 uppercase text-[11px] italic">Compétences</h3>
+                <input type="text" id="skill-search" placeholder="Filtrer..." class="text-[10px] h-6 w-24 px-1" oninput="renderSkills()">
+            </div>
+            <div id="skills-area" class="space-y-1"></div>
+        </div>
+
+        <div class="space-y-8">
+            <div>
+                <div class="flex justify-between items-center mb-4 border-b border-red-900 pb-1">
+                    <h3 class="font-bold text-red-400 uppercase text-[11px] italic">Attaques</h3>
+                    <button onclick="openModal('attack')" class="bg-red-900/50 px-2 rounded text-xs transition">+</button>
+                </div>
+                <div id="attacks-list" class="space-y-3"></div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-2 border-b border-blue-900 pb-1">
+                    <h3 class="font-bold text-blue-400 uppercase text-[11px] italic">Capacités</h3>
+                    <button onclick="openModal('skill')" class="bg-blue-900/50 px-2 rounded text-xs transition">+</button>
+                </div>
+                <button onclick="takeRest('long')" class="w-full bg-red-900/20 hover:bg-red-900/40 text-red-400 text-[10px] font-bold py-2 rounded border border-red-900/50 transition uppercase mb-4">Repos Long (Reset Total)</button>
+                <div id="skills-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="mb-4 border-b border-green-900 pb-1">
+                <div class="flex justify-between items-center mb-2 text-green-500 font-bold uppercase text-[11px] italic">
+                    <h3>Inventaire</h3>
+                    <button onclick="openModal('item')" class="bg-green-900/50 px-2 rounded text-xs">+</button>
+                </div>
+                <div class="bg-black/40 p-2 rounded border border-gray-800 text-[10px]">
+                    <div class="flex justify-between mb-1 font-bold">
+                        <select id="bag-type" onchange="renderAll()" class="h-4 py-0 text-[10px] bg-transparent text-white outline-none">
+                            <option value="8">Poche (8kg)</option>
+                            <option value="14" selected>Sac (14kg)</option>
+                            <option value="22">Lourd (22kg)</option>
+                        </select>
+                        <span id="charge-label">0 / 14 kg</span>
+                    </div>
+                    <div class="progress-bg"><div id="charge-bar" class="progress-fill" style="width: 0%"></div></div>
+                </div>
+            </div>
+            <div id="inventory-list" class="space-y-2"></div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-ui" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50">
+    <div class="bg-gray-900 border border-gray-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
+        <h2 id="modal-title" class="text-lg font-bold mb-4 text-red-500 uppercase italic">Édition</h2>
+        <div class="space-y-3">
+            <input type="hidden" id="m-type"><input type="hidden" id="m-index" value="-1">
+            <input type="text" id="m-name" placeholder="Nom..." class="w-full p-2">
+            <div id="m-skill-fields" class="hidden space-y-3 border-t border-gray-800 pt-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-[9px] uppercase text-gray-500 font-bold">Actuel / Max</label>
+                        <div class="flex items-center gap-1"><input type="number" id="m-skill-cur" class="w-full text-center" placeholder="0"><span class="text-gray-600">/</span><input type="number" id="m-skill-max" class="w-full text-center" placeholder="0"></div>
+                    </div>
+                    <div><label class="text-[9px] uppercase text-gray-500 font-bold">Récupération</label>
+                        <select id="m-skill-rest" class="w-full text-xs"><option value="long">Repos Long</option><option value="court">Repos Court</option><option value="none">Aucune</option></select>
+                    </div>
+                </div>
+            </div>
+            <div id="m-atk-fields" class="hidden space-y-2 border-t border-gray-800 pt-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="m-atk-stat" class="w-full text-xs"><option value="Force">Force</option><option value="Dextérité">Dextérité</option></select>
+                    <div class="flex items-center gap-2 bg-gray-800 px-2 rounded"><input type="checkbox" id="m-atk-prof" checked> <label class="text-[10px]">Maîtrise</label></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2"><input type="number" id="m-atk-misc" placeholder="Magie +"><input type="text" id="m-atk-dice" placeholder="1d8"></div>
+            </div>
+            <div id="m-item-fields" class="hidden border-t border-gray-800 pt-2"><label class="text-[9px] uppercase text-gray-500 font-bold">Poids (kg)</label><input type="number" id="m-item-weight" class="w-full p-2" value="1"></div>
+            <textarea id="m-desc" placeholder="Description..." class="w-full h-32 text-xs p-2"></textarea>
+            <div class="flex justify-end gap-2 pt-2"><button onclick="closeModal()" class="px-4 py-2 bg-gray-700 rounded text-xs uppercase font-bold">Annuler</button><button onclick="saveData()" class="px-4 py-2 bg-red-700 rounded font-bold text-xs uppercase">Enregistrer</button></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let state = {
+    hp_cur: 45, hp_max: 45,
+    hd_cur: 5,
+    stats: { Force: 18, Dextérité: 14, Constitution: 16, Intelligence: 8, Sagesse: 10, Charisme: 10 },
+    m_saves: ["Force", "Constitution"],
+    m_skills: ["Athlétisme", "Perception"],
+    attaques: [{nom: "Hache", stat: "Force", prof: true, misc: 1, dice: "1d12"}],
+    capacites: [{nom: "Rage", desc: "Bonus dégâts +2.", current: 3, max: 3, reset: "long"}],
+    inventaire: [{nom: "Corde", weight: 5, desc: "15m."}]
+};
+
+const SKILLS_LIST = [{n: "Athlétisme", s: "Force"}, {n: "Acrobaties", s: "Dextérité"}, {n: "Escroquerie", s: "Dextérité"}, {n: "Discrétion", s: "Dextérité"}, {n: "Arcanes", s: "Intelligence"}, {n: "Histoire", s: "Intelligence"}, {n: "Investigation", s: "Intelligence"}, {n: "Nature", s: "Intelligence"}, {n: "Religion", s: "Intelligence"}, {n: "Dressage", s: "Sagesse"}, {n: "Médecine", s: "Sagesse"}, {n: "Perception", s: "Sagesse"}, {n: "Perspicacité", s: "Sagesse"}, {n: "Survie", s: "Sagesse"}, {n: "Tromperie", s: "Charisme"}, {n: "Intimidation", s: "Charisme"}, {n: "Performance", s: "Charisme"}, {n: "Persuasion", s: "Charisme"}];
+
+function getMod(v) { return Math.floor((v - 10) / 2); }
+function getProf() { return Math.floor(1 + Math.ceil(parseInt(document.getElementById('char-level').value) / 4)); }
+
+function updateHP(type, val) {
+    if(type === 'cur') state.hp_cur = parseInt(val) || 0;
+    else state.hp_max = parseInt(val) || 1;
+    renderAll();
+}
+
+function updateLevel(val) {
+    let lvl = parseInt(val) || 1;
+    state.hd_cur = lvl; 
+    renderAll();
+}
+
+function takeRest(type) {
+    if(type === 'long') {
+        state.hp_cur = state.hp_max;
+        state.hd_cur = parseInt(document.getElementById('char-level').value);
+    }
+    state.capacites.forEach(s => {
+        if(!isNaN(s.max) && (type === 'long' || (type === 'court' && s.reset === 'court'))) s.current = s.max;
+    });
+    renderAll();
+}
+
+function renderAll() {
+    const p = getProf();
+    const lvl = parseInt(document.getElementById('char-level').value);
+    
+    // 1. Mise à jour Santé & Dés de Vie
+    document.getElementById('hp-cur').value = state.hp_cur;
+    document.getElementById('hp-max').value = state.hp_max;
+    document.getElementById('hd-cur').value = state.hd_cur;
+    document.getElementById('hd-max').innerText = lvl;
+    
+    const hpPerc = Math.max(0, Math.min((state.hp_cur / state.hp_max) * 100, 100));
+    const hpBar = document.getElementById('hp-bar');
+    const hpLabel = document.getElementById('hp-label');
+    hpBar.style.width = hpPerc + '%';
+    
+    if(hpPerc > 50) { hpBar.className = "progress-fill bg-green-500"; hpLabel.innerText = "En forme"; hpLabel.className = "text-[9px] uppercase font-bold mt-1 text-right text-green-500"; }
+    else if(hpPerc > 20) { hpBar.className = "progress-fill bg-yellow-500"; hpLabel.innerText = "Blessé"; hpLabel.className = "text-[9px] uppercase font-bold mt-1 text-right text-yellow-500"; }
+    else { hpBar.className = "progress-fill bg-red-600"; hpLabel.innerText = "Agonie"; hpLabel.className = "text-[9px] uppercase font-bold mt-1 text-right text-red-600 animate-pulse"; }
+
+    // 2. Header Stats
+    document.getElementById('prof-bonus').innerText = `+${p}`;
+    document.getElementById('passive-perception').innerText = 10 + getMod(state.stats.Sagesse) + (state.m_skills.includes("Perception") ? p : 0);
+
+    // 3. Stats & Saves
+    document.getElementById('stats-area').innerHTML = Object.entries(state.stats).map(([k, v]) => `
+        <div class="flex justify-between items-center bg-gray-900/50 p-2 rounded border border-gray-800">
+            <span class="text-[10px] uppercase font-bold text-gray-500">${k}</span>
+            <input type="number" value="${v}" oninput="state.stats['${k}']=parseInt(this.value)||10; renderAll();" class="w-10 text-center font-bold bg-transparent">
+            <span class="text-red-500 font-bold w-8 text-right">${(getMod(v)>=0?'+':'')+getMod(v)}</span>
+        </div>`).join('');
+
+    document.getElementById('saves-area').innerHTML = Object.keys(state.stats).map(s => {
+        const isM = state.m_saves.includes(s);
+        const bonus = getMod(state.stats[s]) + (isM ? p : 0);
+        return `<div class="skill-row"><input type="checkbox" ${isM?'checked':''} onchange="toggleSave('${s}')"><span class="bonus-tag">${(bonus>=0?'+':'')+bonus}</span><span class="text-[10px] uppercase">${s}</span></div>`;
+    }).join('');
+
+    renderSkills();
+
+    // 4. Attaques & Capacités
+    document.getElementById('attacks-list').innerHTML = state.attaques.map((a, i) => {
+        const mod = getMod(state.stats[a.stat]);
+        const hit = mod + (a.prof ? p : 0) + (a.misc || 0);
+        return `<div class="bg-gray-800/60 border border-gray-800 rounded p-2 atk-card">
+            <div class="flex justify-between items-center mb-1"><span class="font-bold text-red-400 cursor-pointer text-xs uppercase" onclick="document.getElementById('atkd-${i}').classList.toggle('hidden')">${a.nom}</span>
+            <div class="flex gap-2"><button onclick="openModal('attack', ${i})" class="text-blue-400 text-[11px]">✎</button><button onclick="state.attaques.splice(${i},1); renderAll()" class="text-gray-600 text-[11px]">✕</button></div></div>
+            <div class="flex justify-between bg-black/40 p-1 rounded font-bold text-xs px-2"><span>+${hit} ATK</span><span class="text-yellow-500">${a.dice}${(mod+(a.misc||0)>=0?'+':'')+(mod+(a.misc||0))}</span></div>
+            <div id="atkd-${i}" class="hidden mt-2 text-[10px] italic text-gray-400 border-t border-gray-700 pt-1 desc-text">${a.desc || '...'}</div></div>`;
+    }).join('');
+
+    document.getElementById('skills-list').innerHTML = state.capacites.map((s, i) => {
+        const hasRes = !isNaN(s.max) && s.max > 0;
+        return `<div class="bg-gray-800/40 border border-gray-800 rounded p-2 cap-card">
+            <div class="flex justify-between items-center"><div class="flex items-center gap-2"><span class="font-bold text-blue-400 cursor-pointer text-xs uppercase" onclick="document.getElementById('skd-${i}').classList.toggle('hidden')">${s.nom}</span>
+            ${hasRes ? `<div class="flex items-center bg-black/50 px-1 rounded border border-blue-900/30"><input type="number" value="${s.current}" class="res-input" oninput="state.capacites[${i}].current=parseInt(this.value)||0"><span class="text-gray-600 font-bold mx-0.5">/</span><span class="text-blue-300 font-bold text-xs">${s.max}</span></div>` : ''}</div>
+            <div class="flex gap-2"><button onclick="openModal('skill', ${i})" class="text-blue-400 text-[11px]">✎</button><button onclick="state.capacites.splice(${i},1); renderAll()" class="text-gray-600 text-[11px]">✕</button></div></div>
+            <div id="skd-${i}" class="hidden mt-1 text-[10px] italic text-gray-400 border-t border-gray-800 pt-1 desc-text">${s.desc || ''}\n<span class="text-[9px] text-blue-900 font-bold uppercase">Reset: ${s.reset}</span></div></div>`;
+    }).join('');
+
+    // 5. Inventaire & Poids
+    const limit = parseInt(document.getElementById('bag-type').value);
+    let totalW = 0;
+    document.getElementById('inventory-list').innerHTML = state.inventaire.map((it, i) => {
+        totalW += it.weight;
+        return `<div class="bg-gray-800/40 border border-gray-700 rounded p-2 text-[11px] flex justify-between items-center"><span class="cursor-pointer" onclick="document.getElementById('invd-${i}').classList.toggle('hidden')">${it.nom} (${it.weight}kg)</span><button onclick="state.inventaire.splice(${i},1); renderAll()" class="text-gray-600 text-[11px]">✕</button></div><div id="invd-${i}" class="hidden p-2 text-[10px] italic text-gray-400 border-t border-gray-800 desc-text">${it.desc || '...'}</div>`;
+    }).join('');
+
+    const weightPerc = Math.min((totalW / limit) * 100, 100);
+    const weightBar = document.getElementById('charge-bar');
+    document.getElementById('charge-label').innerText = `${totalW} / ${limit} kg`;
+    weightBar.style.width = weightPerc + '%';
+    weightBar.className = `progress-fill ${totalW > limit ? 'bg-red-600' : 'bg-green-500'}`;
+}
+
+// Utilitaires restants
+function renderSkills() {
+    const search = (document.getElementById('skill-search')?.value || "").toLowerCase();
+    const prof = getProf();
+    document.getElementById('skills-area').innerHTML = SKILLS_LIST.filter(s => s.n.toLowerCase().includes(search)).map(s => {
+        const isM = state.m_skills.includes(s.n);
+        const bonus = getMod(state.stats[s.s]) + (isM ? prof : 0);
+        return `<div class="skill-row"><input type="checkbox" ${isM?'checked':''} onchange="toggleSkill('${s.n}')"><span class="bonus-tag">${(bonus>=0?'+':'')+bonus}</span><span class="text-gray-300">${s.n}</span></div>`;
+    }).join('');
+}
+function toggleSkill(n) { if(state.m_skills.includes(n)) state.m_skills = state.m_skills.filter(x => x !== n); else state.m_skills.push(n); renderAll(); }
+function toggleSave(s) { if(state.m_saves.includes(s)) state.m_saves = state.m_saves.filter(x => x !== s); else state.m_saves.push(s); renderAll(); }
+function applyClassSaves() { const config = { "Barbare": ["Force", "Constitution"], "Guerrier": ["Force", "Constitution"], "Magicien": ["Intelligence", "Sagesse"], "Roublard": ["Dextérité", "Intelligence"] }; state.m_saves = config[document.getElementById('char-class').value] || []; }
+function openModal(type, index = -1) {
+    document.getElementById('m-type').value = type;
+    document.getElementById('m-index').value = index;
+    document.getElementById('m-atk-fields').classList.toggle('hidden', type !== 'attack');
+    document.getElementById('m-item-fields').classList.toggle('hidden', type !== 'item');
+    document.getElementById('m-skill-fields').classList.toggle('hidden', type !== 'skill');
+    if(index !== -1) {
+        let item = (type==='attack') ? state.attaques[index] : (type==='skill') ? state.capacites[index] : state.inventaire[index];
+        document.getElementById('m-name').value = item.nom;
+        document.getElementById('m-desc').value = item.desc;
+        if(type==='skill') { document.getElementById('m-skill-cur').value = item.current; document.getElementById('m-skill-max').value = item.max; document.getElementById('m-skill-rest').value = item.reset; }
+    }
+    document.getElementById('modal-ui').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal-ui').classList.add('hidden'); }
+function saveData() {
+    const type = document.getElementById('m-type').value;
+    const index = parseInt(document.getElementById('m-index').value);
+    const name = document.getElementById('m-name').value;
+    if(!name) return;
+    let data = { nom: name, desc: document.getElementById('m-desc').value };
+    if(type === 'skill') {
+        data.current = parseInt(document.getElementById('m-skill-cur').value) || 0;
+        data.max = parseInt(document.getElementById('m-skill-max').value) || 0;
+        data.reset = document.getElementById('m-skill-rest').value;
+        if(index === -1) state.capacites.push(data); else state.capacites[index] = data;
+    } else if(type === 'attack') {
+        Object.assign(data, { stat: document.getElementById('m-atk-stat').value, prof: document.getElementById('m-atk-prof').checked, misc: parseInt(document.getElementById('m-atk-misc').value) || 0, dice: document.getElementById('m-atk-dice').value || "1d6" });
+        if(index === -1) state.attaques.push(data); else state.attaques[index] = data;
+    } else {
+        data.weight = parseFloat(document.getElementById('m-item-weight').value) || 0;
+        if(index === -1) state.inventaire.push(data); else state.inventaire[index] = data;
+    }
+    closeModal(); renderAll();
+}
+
+window.onload = () => { applyClassSaves(); renderAll(); };
+</script>
+</body>
+</html>
