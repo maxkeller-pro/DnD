@@ -50,15 +50,35 @@
         </div>
     </div>
 
-    <div id="app" class="max-w-full mx-auto grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 p-2 md:p-6">
+    <div id="char-selection-overlay" class="fixed inset-0 z-[90] bg-zinc-950 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black text-white uppercase tracking-widest italic">Mes Personnages</h2>
+                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-tighter">Choisissez votre destin</p>
+                </div>
+                <button onclick="createNewCharacter()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase transition shadow-lg shadow-emerald-900/20">
+                    + Nouveau Personnage
+                </button>
+            </div>
+
+            <div id="characters-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                </div>
+
+            <button onclick="handleLogout()" class="mt-8 text-zinc-600 hover:text-zinc-400 text-[10px] uppercase font-bold tracking-widest block mx-auto">
+                Déconnexion
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="hidden max-w-full mx-auto grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 p-2 md:p-6">
 
         <div class="lg:col-span-1 space-y-6">
             <div class="relative group rounded-2xl overflow-hidden">
                 <div id="portrait-container" class="relative aspect-[3/4] bg-[#0f0f12]">
                     <img id="char-portrait" src="" class="w-full h-full object-cover hidden" alt="Portrait">
 
-                    <div
-                        class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_#0f0f12] bg-gradient-to-t from-[#0f0f12] via-transparent to-transparent">
+                    <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_#0f0f12] bg-gradient-to-t from-[#0f0f12] via-transparent to-transparent">
                     </div>
 
                     <div id="portrait-placeholder"
@@ -81,9 +101,22 @@
 
         <div class="lg:col-span-3 card p-8 rounded-2xl shadow-2xl border border-gray-800">
             <div class="border-b border-gray-800 pb-8 mb-8">
-                <button onclick="handleLogout()" class="text-xs text-zinc-500 hover:text-red-500 uppercase font-black">
-                    Déconnexion
-                </button>
+                <div class="flex items-center gap-6 mb-4">
+                    <button onclick="backToSelection()" 
+                        class="flex items-center gap-2 text-zinc-500 hover:text-emerald-500 transition uppercase font-black text-[10px] tracking-widest">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Changer de personnages
+                    </button>
+
+                    <div class="h-3 w-[1px] bg-zinc-800"></div>
+
+                    <button onclick="handleLogout()" 
+                        class="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-black tracking-widest transition">
+                        Déconnexion
+                    </button>
+                </div>
                 <div class="flex flex-col md:flex-row justify-between items-start gap-8">
                     <div class="w-full md:w-1/2 space-y-4">
                         <input type="text" id="char-name" placeholder="Nom du Héros"

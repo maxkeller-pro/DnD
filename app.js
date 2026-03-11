@@ -1,7 +1,20 @@
 // --- CONFIGURATION SUPABASE ---
-const SUPABASE_URL = 'https://hklyemyhgkjxfqgmwfqb.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_YnToSKp5wkPMln2aeARYCg_mcur5eh0';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
+
+const CONFIG = {
+    production: {
+        URL: 'https://hklyemyhgkjxfqgmwfqb.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbHllbXloZ2tqeGZxZ213ZnFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMTcwODAsImV4cCI6MjA4ODU5MzA4MH0.ADzQ2uRdHRDlmjvinnK4YZa8FzOrQV6zq45Af5mlJpw'
+    },
+    development: {
+        URL: 'https://tvxjluljhclpjmydgfbn.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2eGpsdWxqaGNscGpteWRnZmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTQ1MDYsImV4cCI6MjA4ODgzMDUwNn0.qSUaesu9ULIsWkyL6aWURfGxtcxPEmlBBK7CInD5_eo'
+    }
+};
+
+const currentConfig = isProduction ? CONFIG.production : CONFIG.development;
+
+const supabaseClient = supabase.createClient(currentConfig.URL, currentConfig.KEY);
 
 // --- DONNÉES DE RÉFÉRENCE ---
 const SKILLS_LIST = [
@@ -53,26 +66,145 @@ const CLASS_SAVES = {
 // --- LOGIQUE AUTH ---
 
 async function checkUser() {
-    const overlay = document.getElementById('auth-overlay');
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        document.getElementById('auth-overlay').style.display = 'none';
+        loadCharactersList(); // Nouvelle étape
+    } else {
+        document.getElementById('auth-overlay').style.display = 'flex';
+        document.getElementById('char-selection-overlay').classList.add('hidden');
+    }
+}
 
-    // On force l'affichage immédiat de l'overlay au cas où le HTML ne l'ait pas fait
-    if (overlay) overlay.style.display = 'flex';
+async function loadCharactersList() {
+    const { data: characters, error } = await supabaseClient
+        .from('personnages')
+        .select('id, nom, data');
 
-    try {
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
+    const container = document.getElementById('characters-list');
+    container.innerHTML = '';
 
-        if (user && !error) {
-            console.log("Utilisateur connecté:", user.email);
-            // On charge les données d'abord
-            await loadUserData(user);
-            // SEULEMENT ICI on cache l'overlay
-            if (overlay) overlay.style.display = 'none';
-        } else {
-            console.log("Aucun utilisateur, maintien de l'écran de connexion.");
-            if (overlay) overlay.style.display = 'flex';
+    if (!characters || characters.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-12 border border-dashed border-zinc-800 rounded-2xl text-zinc-600 uppercase font-bold text-xs">Aucun personnage trouvé</div>`;
+    } else {
+        characters.forEach(char => {
+            const level = char.data?.niveau || 1;
+            const card = document.createElement('div');
+            card.className = "bg-zinc-900 border border-zinc-800 p-6 rounded-2xl hover:border-red-500/50 cursor-pointer transition group relative overflow-hidden";
+
+            // On ajoute un évènement au clic sur la carte, SAUF si on clique sur supprimer
+            card.onclick = (e) => {
+                if (e.target.closest('.btn-delete-char')) return;
+                selectCharacter(char.id);
+            };
+
+            card.innerHTML = `
+        <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-30 transition">
+            <span class="text-4xl">🐉</span>
+        </div>
+        <div class="text-emerald-500 text-[10px] font-black uppercase mb-1 tracking-widest">Niveau ${level}</div>
+        <div class="text-xl font-bold text-white group-hover:text-emerald-400 transition">${char.nom}</div>
+        
+        <button class="btn-delete-char mt-4 text-[9px] font-black text-zinc-600 hover:text-red-500 uppercase tracking-tighter flex items-center gap-1 transition">
+            <span class="text-xs">✕</span> Supprimer le héros
+        </button>
+    `;
+
+            // Attacher l'évènement de suppression au bouton
+            const deleteBtn = card.querySelector('.btn-delete-char');
+            deleteBtn.onclick = () => deleteCharacter(char.id, char.nom);
+
+            container.appendChild(card);
+        });
+    }
+    document.getElementById('char-selection-overlay').classList.remove('hidden');
+}
+
+async function createNewCharacter() {
+    const name = prompt("Nom du héros ?");
+    if (!name) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    // On utilise ton objet de base défini au dessus
+    const initialData = { ...state, nom: name };
+
+    const { data, error } = await supabaseClient
+        .from('personnages')
+        .insert([{
+            nom: name,
+            user_id: user.id,
+            data: initialData
+        }])
+        .select();
+
+    if (!error) loadCharactersList();
+}
+
+// Pour charger les données dans ton state
+async function selectCharacter(charId) {
+    const { data: row, error } = await supabaseClient
+        .from('personnages')
+        .select('*')
+        .eq('id', charId)
+        .single();
+
+    if (error) return console.error("Erreur de chargement:", error);
+
+    if (row) {
+        const baseState = {
+            nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
+            hp_cur: 10, hp_max: 10, hd_cur: 1, maxWeight: 14, ac: 10,
+            stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
+            m_saves: [], m_skills: [], attaques: [], capacites: [], inventaire: [], spells: [],
+            spell_slots: Array(9).fill().map(() => ({ cur: 0, max: 0 })),
+            money: { pp: 0, po: 0, pa: 0, pc: 0 },
+            languages: [], tools: [], portrait: "",
+            notes: { currentSessionId: 0, sessions: [{ id: Date.now(), title: "Session Initiale", content: "" }] },
+            openedDescs: []
+        };
+
+        state = { ...baseState, ...row.data };
+
+        state.nom = row.nom || state.nom;
+        currentCharacterId = row.id;
+
+        document.getElementById('char-selection-overlay').classList.add('hidden');
+        
+        document.getElementById('app').classList.remove('hidden'); 
+        
+        renderAll();
+    }
+
+    window.history.pushState({ charId: id }, "");
+
+    window.onpopstate = function(event) {
+        if (document.getElementById('char-selection-overlay').classList.contains('hidden')) {
+            backToSelection();
         }
-    } catch (e) {
-        console.error("Erreur critique Auth:", e);
+    };
+}
+
+async function deleteCharacter(charId, charName) {
+    const confirmDelete = confirm(`Es-tu sûr de vouloir envoyer ${charName} au Valhalla définitivement ?`);
+    
+    if (confirmDelete) {
+        const { error } = await supabaseClient
+            .from('personnages')
+            .delete()
+            .eq('id', charId);
+
+        if (error) {
+            alert("Erreur lors de la suppression : " + error.message);
+        } else {
+            // On rafraîchit la liste
+            loadCharactersList();
+            
+            // Si on vient de supprimer le perso qui était actif, on reset l'ID
+            if (currentCharacterId === charId) {
+                currentCharacterId = null;
+            }
+        }
     }
 }
 
@@ -169,7 +301,7 @@ function updateHPUI() {
 
     if (fill && label) {
         fill.style.width = p + '%';
-        
+
         fill.classList.remove('bg-emerald-500', 'bg-amber-500', 'bg-red-600', 'bg-red-900');
         label.classList.remove('text-emerald-500', 'text-amber-500', 'text-red-600', 'text-red-900');
 
@@ -392,7 +524,7 @@ function renderCapacites() {
 
         // --- LOGIQUE DU MAXIMUM ---
         const effectiveMax = c.useProf ? p : (parseInt(c.max) || 0);
-        
+
         // Sécurité : si le niveau change et que le max baisse, on ajuste le courant
         if (c.current > effectiveMax) c.current = effectiveMax;
 
@@ -414,17 +546,17 @@ function renderCapacites() {
         if (effectiveMax > 0) {
             usageBox.classList.remove('hidden');
             root.querySelector('.cap-max').innerText = effectiveMax;
-            
+
             const input = root.querySelector('.cap-current');
             input.value = c.current;
-            
+
             // Mise à jour de la valeur quand on change le chiffre
-            input.oninput = (e) => { 
+            input.oninput = (e) => {
                 let val = parseInt(e.target.value) || 0;
                 // On empêche de dépasser le max
                 if (val > effectiveMax) val = effectiveMax;
                 if (val < 0) val = 0;
-                
+
                 state.capacites[i].current = val;
                 saveToSupabase(); // Sauvegarde auto en DB
             };
@@ -445,12 +577,12 @@ function renderCapacites() {
         };
 
         root.querySelector('.cap-edit').onclick = () => openModal('skill', i);
-        
-        root.querySelector('.cap-delete').onclick = () => { 
-            if (confirm('Supprimer cette capacité ?')) { 
-                state.capacites.splice(i, 1); 
-                renderAll(); 
-            } 
+
+        root.querySelector('.cap-delete').onclick = () => {
+            if (confirm('Supprimer cette capacité ?')) {
+                state.capacites.splice(i, 1);
+                renderAll();
+            }
         };
 
         // --- DRAG & DROP ---
@@ -497,14 +629,14 @@ function renderInventoryList() {
     updateWeightUI();
     const container = document.getElementById('inventory-list');
     const template = document.getElementById('template-item-inventaire');
-    
+
     if (!container || !template) return;
-    
+
     container.innerHTML = ''; // On vide la liste
 
     state.inventaire.forEach((it, i) => {
         const clone = template.content.cloneNode(true);
-        
+
         // On s'assure qu'une quantité existe
         if (!it.qty) it.qty = 1;
 
@@ -516,13 +648,13 @@ function renderInventoryList() {
 
         // Actions des boutons
         clone.querySelector('.btn-plus').onclick = () => { it.qty++; renderAll(); };
-        clone.querySelector('.btn-minus').onclick = () => { 
-            if (it.qty > 1) it.qty--; 
-            renderAll(); 
+        clone.querySelector('.btn-minus').onclick = () => {
+            if (it.qty > 1) it.qty--;
+            renderAll();
         };
-        clone.querySelector('.btn-delete').onclick = () => { 
-            state.inventaire.splice(i, 1); 
-            renderAll(); 
+        clone.querySelector('.btn-delete').onclick = () => {
+            state.inventaire.splice(i, 1);
+            renderAll();
         };
 
         container.appendChild(clone);
@@ -572,7 +704,7 @@ function openModal(type, index = -1) {
         }
         if (type === 'item') {
             document.getElementById('m-item-weight').value = item.weight;
-        } 
+        }
     } else {
         document.getElementById('m-name').value = "";
         document.getElementById('m-desc').value = "";
@@ -600,9 +732,9 @@ function closeModal() { document.getElementById('modal-ui').classList.add('hidde
 function saveData() {
     const type = document.getElementById('m-type').value;
     const index = parseInt(document.getElementById('m-index').value);
-    let data = { 
-        nom: document.getElementById('m-name').value, 
-        desc: document.getElementById('m-desc').value 
+    let data = {
+        nom: document.getElementById('m-name').value,
+        desc: document.getElementById('m-desc').value
     };
 
     if (type === 'attack') {
@@ -621,35 +753,35 @@ function saveData() {
         const useProfValue = document.getElementById('m-skill-use-prof').checked;
         const maxVal = useProfValue ? -1 : (parseInt(document.getElementById('m-skill-max').value) || 0);
 
-        data = { 
-            ...data, 
-            max: maxVal, 
-            current: index === -1 ? (useProfValue ? getProf() : maxVal) : state.capacites[index].current, 
+        data = {
+            ...data,
+            max: maxVal,
+            current: index === -1 ? (useProfValue ? getProf() : maxVal) : state.capacites[index].current,
             useProf: useProfValue,
-            reset: document.getElementById('m-skill-reset').value 
+            reset: document.getElementById('m-skill-reset').value
         };
-        
+
         if (index === -1) state.capacites.push(data); else state.capacites[index] = data;
     }
 
     if (type === 'spell') {
-        data = { 
-            ...data, 
-            rank: parseInt(document.getElementById('m-spell-rank').value) || 0, 
-            school: document.getElementById('m-spell-school').value 
+        data = {
+            ...data,
+            rank: parseInt(document.getElementById('m-spell-rank').value) || 0,
+            school: document.getElementById('m-spell-school').value
         };
         if (index === -1) state.spells.push(data); else state.spells[index] = data;
     }
 
     // --- CORRECTION POUR L'INVENTAIRE ---
     if (type === 'item') {
-        data = { 
-            ...data, 
+        data = {
+            ...data,
             // On utilise les IDs exacts du HTML (sans le préfixe "m-")
             weight: parseFloat(document.getElementById('item-weight').value) || 0,
             qty: parseInt(document.getElementById('item-qty').value) || 1
         };
-        
+
         if (index === -1) {
             state.inventaire.push(data);
         } else {
@@ -658,7 +790,7 @@ function saveData() {
     }
 
     closeModal();
-    saveToSupabase(); 
+    saveToSupabase();
     renderAll();
 }
 
@@ -682,10 +814,10 @@ function toggleDesc(id) {
 function takeRest(type) {
     const p = getProf();
 
-    if (type === 'long') { 
-        state.hp_cur = state.hp_max; 
-        state.hd_cur = state.niveau; 
-        state.spell_slots.forEach(s => s.cur = s.max); 
+    if (type === 'long') {
+        state.hp_cur = state.hp_max;
+        state.hd_cur = state.niveau;
+        state.spell_slots.forEach(s => s.cur = s.max);
     }
 
     // --- CORRECTION DES CAPACITÉS ---
@@ -706,7 +838,7 @@ function takeRest(type) {
 function renderExtras() {
     const langContainer = document.getElementById('languages-list');
     const toolContainer = document.getElementById('tools-list');
-    
+
     if (!langContainer || !toolContainer) return;
 
     // Rendu des Langues
@@ -746,7 +878,7 @@ function removeExtra(type, index) {
 function renderPortrait() {
     const img = document.getElementById('char-portrait');
     const placeholder = document.getElementById('portrait-placeholder');
-    
+
     if (state.portrait) {
         img.src = state.portrait;
         img.classList.remove('hidden');
@@ -775,7 +907,7 @@ function handleImageUpload(input) {
         }
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             state.portrait = e.target.result;
             renderPortrait();
             saveToSupabase();
@@ -790,7 +922,7 @@ function renderNotes() {
     if (!selector || !textarea) return;
 
     // Remplir le sélecteur
-    selector.innerHTML = state.notes.sessions.map(s => 
+    selector.innerHTML = state.notes.sessions.map(s =>
         `<option value="${s.id}" ${s.id == state.notes.currentSessionId ? 'selected' : ''}>${s.title}</option>`
     ).join('');
 
@@ -825,7 +957,7 @@ function switchSession(id) {
 function saveNotes(content) {
     const status = document.getElementById('note-status');
     status.innerText = "Modification...";
-    
+
     const session = state.notes.sessions.find(s => s.id == state.notes.currentSessionId);
     if (session) {
         session.content = content;
@@ -854,9 +986,9 @@ function editItem(index) {
     if (!it) return;
 
     // 1. On prépare les données (IDs vérifiés selon ton index.html)
-    document.getElementById('m-type').value = 'item';  
-    document.getElementById('m-index').value = index; 
-    
+    document.getElementById('m-type').value = 'item';
+    document.getElementById('m-index').value = index;
+
     document.getElementById('m-name').value = it.nom || "";
     document.getElementById('item-weight').value = it.weight || 0;
     document.getElementById('item-qty').value = it.qty || 1;
@@ -864,11 +996,11 @@ function editItem(index) {
 
     // 2. On ajuste l'affichage visuel
     document.getElementById('modal-title').innerText = "Modifier l'objet";
-    
+
     // On affiche l'inventaire et la description
     document.getElementById('m-item-fields').classList.remove('hidden');
     document.getElementById('m-desc').classList.remove('hidden'); // Correction ID ici
-    
+
     // On cache le reste
     document.getElementById('m-atk-fields').classList.add('hidden');
     document.getElementById('m-spell-fields').classList.add('hidden');
@@ -883,7 +1015,7 @@ function saveItem() {
     const nom = document.getElementById('m-name').value;
     const weight = parseFloat(document.getElementById('item-weight').value) || 0;
     const qty = parseInt(document.getElementById('item-qty').value) || 1;
-    
+
     // On utilise le champ générique m-index
     const editIndex = parseInt(document.getElementById('m-index').value);
 
@@ -897,9 +1029,9 @@ function saveItem() {
         state.inventaire.push(itemData);
     }
 
-    closeModal(); 
+    closeModal();
     renderAll();
-    
+
     // Reset du champ générique
     document.getElementById('m-index').value = "-1";
 }
@@ -911,6 +1043,18 @@ function switchTab(t) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + t).classList.add('active');
 }
+
+async function backToSelection() {
+    if (currentCharacterId) await saveToSupabase();
+
+    currentCharacterId = null;
+
+    document.getElementById('app').classList.add('hidden');
+    loadCharactersList();
+
+    window.scrollTo(0, 0);
+}
+
 
 // --- INIT ---
 window.onload = checkUser;
@@ -928,3 +1072,5 @@ window.updateHP = updateHP;
 window.toggleSave = toggleSave;
 window.toggleSkill = toggleSkill;
 window.renderSkills = renderSkillsList;
+window.deleteCharacter = deleteCharacter;
+window.backToSelection = backToSelection;
