@@ -1,0 +1,194 @@
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+
+        body {
+            background-color: #0f0f12;
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: multiply;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: rgba(20, 20, 23, 0.96);
+            border: 1px solid #333;
+            backdrop-filter: blur(12px);
+        }
+
+        input,
+        select,
+        textarea {
+            background: #1a1a1d !important;
+            color: white !important;
+            border: 1px solid #333 !important;
+            border-radius: 6px;
+            padding: 4px 8px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4b5563 !important;
+        }
+
+        .stat-box {
+            text-align: center;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 8px;
+            transition: all 0.3s;
+        }
+
+        .bonus-tag {
+            min-width: 32px;
+            text-align: center;
+            font-weight: 700;
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .skill-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .progress-bg {
+            background: #000;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #333;
+            transition: transform 0.2s;
+        }
+
+        .item-card:hover {
+            transform: translateX(4px);
+            border-color: #444;
+        }
+
+        .atk-card {
+            border-left: 4px solid #b91c1c;
+        }
+
+        .cap-card {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .spell-card {
+            border-left: 4px solid #8b5cf6;
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .hp-input {
+            background: transparent !important;
+            border: none !important;
+            font-weight: 900;
+        }
+
+        .tab-btn {
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            opacity: 0.5;
+            cursor: pointer;
+            padding-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #8b5cf6;
+            color: #8b5cf6;
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Description avec respect des sauts de ligne */
+        .desc-collapse {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .desc-collapse.open {
+            max-height: 500px;
+            /* Ou assez pour tes textes */
+        }
+
+        .btn-rest-court {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-rest-court:hover {
+            background: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            color: white !important;
+        }
+
+        .btn-rest-long {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid #dc2626;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.1);
+        }
+
+        .btn-rest-long:hover {
+            background: #dc2626;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+            color: white !important;
+        }
+
+        /* Supprime les flèches sur les inputs de type number */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Structure commune pour les lignes de stats (Saves et Skills) */
+        .stat-row-layout {
+            display: grid;
+            grid-template-columns: 24px 1fr 35px;
+            /* Case | Nom | Bonus */
+            align-items: center;
+            gap: 12px;
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        /* Style spécifique pour les checkboxes custom */
+        .custom-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #444;
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox:checked {
+            background-color: #ef4444;
+            /* Rouge pour saves ou Bleu pour skills via JS */
+            border-color: #ef4444;
+        }
