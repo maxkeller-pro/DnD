@@ -188,18 +188,15 @@
                             <div class="flex items-baseline gap-1">
                                 <input type="number" id="speed" step="0.5"
                                     class="hp-input !text-3xl !w-20 text-center font-black text-emerald-500 bg-transparent border-none"
-                                    oninput="state.speed=parseFloat(this.value)||0; renderAll();">
+                                    onchange="state.speed=parseFloat(this.value)||0; renderAll();">
                                 <span class="text-[10px] font-bold text-zinc-600 uppercase">m</span>
                             </div>
-                            <div
-                                class="absolute -right-2 -bottom-2 opacity-5 text-4xl group-hover:opacity-10 transition">
-                                ⚡</div>
                         </div>
                         <div class="stat-box flex-1 md:w-28 border-gray-400/30 bg-gray-400/5">
                             <div class="text-[8px] uppercase text-gray-400 font-black tracking-widest">CA</div>
                             <input type="number" id="char-ac"
                                 class="w-full text-center bg-transparent border-none text-3xl font-black text-white p-0"
-                                oninput="state.ac=parseInt(this.value)||10; renderAll();">
+                                onchange="state.ac=parseInt(this.value)||10; renderAll();">
                         </div>
                         <div class="stat-box flex-1 md:w-28 border-yellow-600/30 bg-yellow-600/5">
                             <div class="text-[8px] uppercase text-yellow-500 font-black tracking-widest">Maîtrise</div>

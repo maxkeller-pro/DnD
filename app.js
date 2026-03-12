@@ -419,8 +419,13 @@ function renderStatsList() {
             <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
                 <span class="text-[10px] uppercase font-bold text-zinc-500">${k}</span>
                 <div class="flex items-center gap-3">
-                    <input type="number" value="${v}" oninput="state.stats['${k}']=parseInt(this.value)||10; renderAll();" class="w-10 text-center bg-transparent !border-none font-bold">
-                    <span class="text-white font-black text-base w-8 text-right">${(getMod(v) >= 0 ? '+' : '') + getMod(v)}</span>
+                    <input type="number" value="${v}" 
+                        onchange="state.stats['${k}']=parseInt(this.value)||10; renderAll(); saveData();" 
+                        class="w-12 text-center bg-transparent !border-none font-bold outline-none">
+                    
+                    <span class="text-white font-black text-base w-8 text-right">
+                        ${(getMod(v) >= 0 ? '+' : '') + getMod(v)}
+                    </span>
                 </div>
             </div>`;
     }).join('');
@@ -828,6 +833,11 @@ function takeRest(type) {
         state.hp_cur = state.hp_max;
         state.hd_cur = state.niveau;
         state.spell_slots.forEach(s => s.cur = s.max);
+
+        if (state.blessures > 0) {
+            state.blessures -= 1;
+        } else {
+        }
     }
 
     // --- CORRECTION DES CAPACITÉS ---
