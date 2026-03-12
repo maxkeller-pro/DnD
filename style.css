@@ -161,7 +161,6 @@ input:focus {
 /* Supprime les flèches sur les inputs de type number */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
     margin: 0;
 }
 
@@ -200,4 +199,14 @@ input::-webkit-inner-spin-button {
 
 .card:hover .btn-delete-char {
     opacity: 1;
+}
+
+input[type="number"] {
+    min-width: 3rem;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.hp-input {
+    overflow: visible;
 }

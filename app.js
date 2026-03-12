@@ -30,9 +30,16 @@ let currentCharacterId = null;
 // --- ÉTAT INITIAL ---
 let state = {
     nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
-    hp_cur: 10, hp_max: 10, hd_cur: 1, maxWeight: 14, ac: 10,
+    hp_cur: 10, 
+    hp_max: 10, 
+    hd_cur: 1, 
+    maxWeight: 14, 
+    ac: 10,
+    speed: 9,
     stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
     m_saves: [], m_skills: [], attaques: [], capacites: [], inventaire: [], spells: [],
+    inspiration: false,
+    blessures: 0,
     spell_slots: Array(9).fill().map(() => ({ cur: 0, max: 0 })),
     money: { pp: 0, po: 0, pa: 0, pc: 0 },
     languages: [],
@@ -106,7 +113,7 @@ async function loadCharactersList() {
         <div class="text-xl font-bold text-white group-hover:text-emerald-400 transition">${char.nom}</div>
         
         <button class="btn-delete-char mt-4 text-[9px] font-black text-zinc-600 hover:text-red-500 uppercase tracking-tighter flex items-center gap-1 transition">
-            <span class="text-xs">✕</span> Supprimer le héros
+            <span class="text-xs">✕</span> Supprimer le personnage
         </button>
     `;
 
@@ -365,6 +372,7 @@ function renderAll(shouldSave = true) {
     document.getElementById('char-class').value = state.classe;
     document.getElementById('char-level').value = state.niveau;
     document.getElementById('char-ac').value = state.ac;
+    if(document.getElementById('speed')) document.getElementById('speed').value = state.speed || 9;
     document.getElementById('prof-bonus').innerText = `+${p}`;
 
     // Stats & Init
@@ -396,6 +404,8 @@ function renderAll(shouldSave = true) {
     renderExtras();
     renderPortrait();
     renderNotes();
+    renderInspiration();
+    renderBlessures();
 
     if (shouldSave) saveToSupabase();
 }
@@ -409,8 +419,13 @@ function renderStatsList() {
             <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
                 <span class="text-[10px] uppercase font-bold text-zinc-500">${k}</span>
                 <div class="flex items-center gap-3">
-                    <input type="number" value="${v}" oninput="state.stats['${k}']=parseInt(this.value)||10; renderAll();" class="w-10 text-center bg-transparent !border-none font-bold">
-                    <span class="text-white font-black text-base w-8 text-right">${(getMod(v) >= 0 ? '+' : '') + getMod(v)}</span>
+                    <input type="number" value="${v}" 
+                        onchange="state.stats['${k}']=parseInt(this.value)||10; renderAll(); saveData();" 
+                        class="w-12 text-center bg-transparent !border-none font-bold outline-none">
+                    
+                    <span class="text-white font-black text-base w-8 text-right">
+                        ${(getMod(v) >= 0 ? '+' : '') + getMod(v)}
+                    </span>
                 </div>
             </div>`;
     }).join('');
@@ -818,6 +833,11 @@ function takeRest(type) {
         state.hp_cur = state.hp_max;
         state.hd_cur = state.niveau;
         state.spell_slots.forEach(s => s.cur = s.max);
+
+        if (state.blessures > 0) {
+            state.blessures -= 1;
+        } else {
+        }
     }
 
     // --- CORRECTION DES CAPACITÉS ---
@@ -1055,6 +1075,85 @@ async function backToSelection() {
     window.scrollTo(0, 0);
 }
 
+function toggleInspiration() {
+    state.inspiration = !state.inspiration;
+    renderInspiration();
+    saveData(); // Sauvegarde automatique dans Supabase
+}
+
+function renderInspiration() {
+    const btn = document.getElementById('inspiration-btn');
+    const star = document.getElementById('inspiration-star');
+    const status = document.getElementById('inspiration-status');
+
+    if (state.inspiration) {
+        // État Actif : Doré et brillant
+        btn.classList.remove('border-zinc-800', 'bg-transparent');
+        btn.classList.add('border-amber-500/50', 'bg-amber-500/10', 'shadow-[0_0_15px_rgba(245,158,11,0.2)]');
+        star.classList.add('animate-pulse');
+        status.innerText = "Actif";
+        status.classList.remove('text-zinc-600');
+        status.classList.add('text-amber-500');
+    } else {
+        // État Inactif : Sombre
+        btn.classList.add('border-zinc-800', 'bg-transparent');
+        btn.classList.remove('border-amber-500/50', 'bg-amber-500/10', 'shadow-[0_0_15px_rgba(245,158,11,0.2)]');
+        star.classList.remove('animate-pulse');
+        status.innerText = "Inactif";
+        status.classList.add('text-zinc-600');
+        status.classList.remove('text-amber-500');
+    }
+}
+
+function renderBlessures() {
+    const container = document.getElementById('blessures-container');
+    if (!container) return; // Sécurité si l'élément n'existe pas encore
+    
+    const statusLabel = document.getElementById('death-status');
+    container.innerHTML = '';
+
+    // Si blessures n'existe pas dans le state, on l'initialise
+    if (state.blessures === undefined) state.blessures = 0;
+
+    for (let i = 1; i <= 6; i++) {
+        const isFilled = i <= state.blessures;
+        const bolt = document.createElement('div');
+        
+        // Style de la "case" éclair
+        bolt.className = `cursor-pointer transition-all duration-300 transform ${isFilled ? 'scale-110' : 'hover:scale-110 opacit-50'}`;
+        
+        bolt.innerHTML = `
+            <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" 
+                 style="filter: ${isFilled ? 'drop-shadow(0 0 8px rgba(220, 38, 38, 0.8))' : 'none'}">
+                <path d="M13 1L1 16H11L9 29L23 11H13L15 1H13Z" 
+                      stroke="${isFilled ? '#ef4444' : '#3f3f46'}" 
+                      stroke-width="2" 
+                      fill="${isFilled ? '#ef4444' : 'transparent'}" 
+                      stroke-linejoin="round"/>
+            </svg>
+        `;
+        
+        bolt.onclick = () => {
+            state.blessures = (state.blessures === i) ? i - 1 : i;
+            renderAll();
+            saveData(); // Sauvegarde sur Supabase
+        };
+        
+        container.appendChild(bolt);
+    }
+    
+    // Mise à jour du texte
+    if (state.blessures >= 6) { statusLabel.innerText = "DÉCÉDÉ"; statusLabel.style.color = "#ef4444"; }
+    else if (state.blessures >= 4) { statusLabel.innerText = "AGONISANT"; statusLabel.style.color = "#f97316"; }
+    else if (state.blessures > 0) { statusLabel.innerText = "BLESSÉ"; statusLabel.style.color = "#fbbf24"; }
+    else { statusLabel.innerText = "STABLE"; statusLabel.style.color = "#71717a"; }
+}
+
+function resetBlessures() {
+    state.blessures = 0;
+    renderAll();
+    saveData();
+}
 
 // --- INIT ---
 window.onload = checkUser;
