@@ -442,8 +442,67 @@
                     </div>
 
                     <div id="section-spells" class="hidden space-y-6">
-                        <div id="spell-slots" class="grid grid-cols-3 md:grid-cols-9 gap-2 mb-6"></div>
-                        <div id="spells-list" class="space-y-3"></div>
+                        <div id="spell-slots-container"
+                            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 mb-6"></div>
+
+                        <div
+                            class="mb-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-zinc-900/20 p-4 rounded-xl border border-zinc-800/50">
+
+                            <div class="md:col-span-6 space-y-1">
+                                <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Rechercher un
+                                    sort</label>
+                                <input type="text" id="spell-search" placeholder="Nom du sort..."
+                                    class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-2.5 focus:border-purple-500 outline-none"
+                                    oninput="renderSpellsList()">
+                            </div>
+
+                            <div class="md:col-span-6 flex gap-2 items-end">
+
+                                <div class="flex-1 space-y-1">
+                                    <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Rang</label>
+                                    <select id="spell-filter-rank"
+                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-2.5 focus:border-purple-500 outline-none"
+                                        onchange="renderSpellsList()">
+                                        <option value="all">Tous</option>
+                                        <option value="0">Cantrips</option>
+                                        <option value="1">Rang 1</option>
+                                        <option value="2">Rang 2</option>
+                                        <option value="3">Rang 3</option>
+                                        <option value="4">Rang 4</option>
+                                        <option value="5">Rang 5</option>
+                                        <option value="6">Rang 6</option>
+                                        <option value="7">Rang 7</option>
+                                        <option value="8">Rang 8</option>
+                                        <option value="9">Rang 9</option>
+                                    </select>
+                                </div>
+
+                                <div class="flex-1 space-y-1">
+                                    <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Action</label>
+                                    <select id="spell-filter-action"
+                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-[10px] p-2.5 font-bold uppercase focus:border-purple-500 outline-none"
+                                        onchange="renderSpellsList()">
+                                        <option value="all">Toutes</option>
+                                        <option value="action">Action</option>
+                                        <option value="bonus">Bonus</option>
+                                        <option value="reaction">Réaction</option>
+                                        <option value="Rituel">Rituel</option>
+                                    </select>
+                                </div>
+
+                                <button onclick="resetSpellFilters()" title="Réinitialiser"
+                                    class="h-[38px] px-3 bg-zinc-800 hover:bg-red-900/40 text-zinc-500 hover:text-red-500 transition-all border border-zinc-800 rounded-lg flex items-center justify-center mb-[1px]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="spells-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
                         <button onclick="openModal('spell')"
                             class="w-full border border-dashed border-purple-900/50 p-4 rounded-xl text-[10px] font-black text-purple-500 hover:bg-purple-600/5 transition uppercase tracking-widest">+
                             Inscrire un Sort</button>
@@ -465,12 +524,75 @@
                         <input type="text" id="m-name" class="w-full p-3 !bg-zinc-950">
                     </div>
                     <div id="m-spell-fields" class="hidden grid grid-cols-2 gap-4">
-                        <div class="space-y-1"><label
-                                class="text-[9px] uppercase font-black text-purple-400">Rang</label><input type="number"
-                                id="m-spell-rank" class="w-full p-3 !bg-zinc-950"></div>
-                        <div class="space-y-1"><label
-                                class="text-[9px] uppercase font-black text-purple-400">École</label><input type="text"
-                                id="m-spell-school" class="w-full p-3 !bg-zinc-950"></div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Rang</label>
+                            <input type="number" id="m-spell-rank" placeholder="0" class="w-full p-3 !bg-zinc-950">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">École</label>
+                            <select id="m-spell-school"
+                                class="w-full p-3 !bg-zinc-950 text-white text-xs border border-zinc-800 rounded-lg outline-none">
+                                <option value="abjuration">Abjuration</option>
+                                <option value="divination">Divination</option>
+                                <option value="enchantement">Enchantement</option>
+                                <option value="évocation">Évocation</option>
+                                <option value="illusion">Illusion</option>
+                                <option value="invocation">Invocation</option>
+                                <option value="nécromancie">Nécromancie</option>
+                                <option value="transmutation">Transmutation</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Type d'Action</label>
+                            <select id="spell-action-type" class="w-full !bg-zinc-950 p-3 text-xs">
+                                <option value="action">Action</option>
+                                <option value="bonus">Action Bonus</option>
+                                <option value="reaction">Réaction</option>
+                                <option value="rituel">Rituel / Temps long</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Portée</label>
+                            <input type="text" id="m-spell-range" placeholder="ex: 18m" class="w-full p-3 !bg-zinc-950">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Cible / Zone</label>
+                            <input type="text" id="m-spell-target" placeholder="ex: 1 créature"
+                                class="w-full p-3 !bg-zinc-950">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Temps d'incantation</label>
+                            <input type="text" id="m-spell-incantation" placeholder="ex: 10 min"
+                                class="w-full p-3 !bg-zinc-950 text-white text-xs border border-zinc-800 rounded-lg outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Durée</label>
+                            <input type="text" id="m-spell-duration" placeholder="ex: Instantanée"
+                                class="w-full p-3 !bg-zinc-950">
+                        </div>
+
+                        <div class="col-span-2 space-y-2">
+                            <label class="text-[9px] uppercase font-black text-purple-400">Composantes</label>
+                            <div class="flex gap-6 bg-zinc-950 p-3 rounded-lg border border-zinc-800">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="comp-v" class="w-4 h-4 accent-purple-500">
+                                    <span class="text-xs font-bold text-zinc-400 group-hover:text-white transition">V
+                                        (Verbal)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="comp-s" class="w-4 h-4 accent-purple-500">
+                                    <span class="text-xs font-bold text-zinc-400 group-hover:text-white transition">S
+                                        (Somatique)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="comp-m" class="w-4 h-4 accent-purple-500">
+                                    <span class="text-xs font-bold text-zinc-400 group-hover:text-white transition">M
+                                        (Matériel)</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     <div id="m-atk-fields" class="hidden space-y-4">
                         <div class="grid grid-cols-2 gap-4">

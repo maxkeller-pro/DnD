@@ -30,17 +30,31 @@ let currentCharacterId = null;
 // --- ÉTAT INITIAL ---
 let state = {
     nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
-    hp_cur: 10, 
-    hp_max: 10, 
-    hd_cur: 1, 
-    maxWeight: 14, 
+    hp_cur: 10,
+    hp_max: 10,
+    hd_cur: 1,
+    maxWeight: 14,
     ac: 10,
     speed: 9,
     stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
-    m_saves: [], m_skills: [], attaques: [], capacites: [], inventaire: [], spells: [],
+    m_saves: [],
+    m_skills: [],
+    attaques: [],
+    capacites: [],
+    inventaire: [],
+    spells: [],
+    spellSlots: { 
+        1: { max: 0, used: 0 },
+        2: { max: 0, used: 0 },
+        3: { max: 0, used: 0 },
+        4: { max: 0, used: 0 },
+        5: { max: 0, used: 0 },
+        6: { max: 0, used: 0 },
+        7: { max: 0, used: 0 },
+        8: { max: 0, used: 0 },
+        9: { max: 0, used: 0 } },
     inspiration: false,
     blessures: 0,
-    spell_slots: Array(9).fill().map(() => ({ cur: 0, max: 0 })),
     money: { pp: 0, po: 0, pa: 0, pc: 0 },
     languages: [],
     tools: [],
@@ -159,12 +173,26 @@ async function selectCharacter(charId) {
     if (error) return console.error("Erreur de chargement:", error);
 
     if (row) {
+        currentCharacterId = row.id;
+        state.nom = row.nom || state.nom;
+
+
         const baseState = {
             nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
             hp_cur: 10, hp_max: 10, hd_cur: 1, maxWeight: 14, ac: 10,
             stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
             m_saves: [], m_skills: [], attaques: [], capacites: [], inventaire: [], spells: [],
-            spell_slots: Array(9).fill().map(() => ({ cur: 0, max: 0 })),
+            spellSlots: {
+                1: { max: 0, used: 0 },
+                2: { max: 0, used: 0 },
+                3: { max: 0, used: 0 },
+                4: { max: 0, used: 0 },
+                5: { max: 0, used: 0 },
+                6: { max: 0, used: 0 },
+                7: { max: 0, used: 0 },
+                8: { max: 0, used: 0 },
+                9: { max: 0, used: 0 }
+            },
             money: { pp: 0, po: 0, pa: 0, pc: 0 },
             languages: [], tools: [], portrait: "",
             notes: { currentSessionId: 0, sessions: [{ id: Date.now(), title: "Session Initiale", content: "" }] },
@@ -173,19 +201,22 @@ async function selectCharacter(charId) {
 
         state = { ...baseState, ...row.data };
 
-        state.nom = row.nom || state.nom;
-        currentCharacterId = row.id;
+        if (!state.spellSlots) {
+            state.spellSlots = baseState.spellSlots;
+        }
+
 
         document.getElementById('char-selection-overlay').classList.add('hidden');
-        
-        document.getElementById('app').classList.remove('hidden'); 
-        
+
+        document.getElementById('app').classList.remove('hidden');
+
         renderAll();
+
+        window.history.pushState({ charId: charId }, "");
     }
 
-    window.history.pushState({ charId: id }, "");
 
-    window.onpopstate = function(event) {
+    window.onpopstate = function (event) {
         if (document.getElementById('char-selection-overlay').classList.contains('hidden')) {
             backToSelection();
         }
@@ -194,7 +225,7 @@ async function selectCharacter(charId) {
 
 async function deleteCharacter(charId, charName) {
     const confirmDelete = confirm(`Es-tu sûr de vouloir envoyer ${charName} au Valhalla définitivement ?`);
-    
+
     if (confirmDelete) {
         const { error } = await supabaseClient
             .from('personnages')
@@ -206,7 +237,7 @@ async function deleteCharacter(charId, charName) {
         } else {
             // On rafraîchit la liste
             loadCharactersList();
-            
+
             // Si on vient de supprimer le perso qui était actif, on reset l'ID
             if (currentCharacterId === charId) {
                 currentCharacterId = null;
@@ -372,7 +403,7 @@ function renderAll(shouldSave = true) {
     document.getElementById('char-class').value = state.classe;
     document.getElementById('char-level').value = state.niveau;
     document.getElementById('char-ac').value = state.ac;
-    if(document.getElementById('speed')) document.getElementById('speed').value = state.speed || 9;
+    if (document.getElementById('speed')) document.getElementById('speed').value = state.speed || 9;
     document.getElementById('prof-bonus').innerText = `+${p}`;
 
     // Stats & Init
@@ -406,6 +437,7 @@ function renderAll(shouldSave = true) {
     renderNotes();
     renderInspiration();
     renderBlessures();
+    renderSpellSlots();
 
     if (shouldSave) saveToSupabase();
 }
@@ -615,29 +647,139 @@ function renderCapacites() {
 }
 
 function renderSpellsList() {
-    document.getElementById('spells-list').innerHTML = state.spells.map((s, i) => {
-        const id = `spell-${i}`;
-        const isOpen = state.openedDescs.includes(id);
-        return `
-        <div class="item-card spell-card p-4 rounded-xl mb-2">
-            <div class="flex justify-between items-center cursor-pointer" onclick="toggleDesc('${id}')">
-                <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-lg bg-purple-900/20 flex items-center justify-center text-[10px] font-black text-purple-400 border border-purple-900/30">${s.rank}</div>
-                    <div class="font-black text-white text-sm uppercase">${s.nom}</div>
+    const container = document.getElementById('spells-list');
+    if (!container) return;
+
+    const searchTerm = document.getElementById('spell-search')?.value.toLowerCase() || "";
+    const filterRank = document.getElementById('spell-filter-rank')?.value || "all";
+    const filterAction = document.getElementById('spell-filter-action')?.value || "all";
+
+    container.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+    container.innerHTML = '';
+
+    // 1. On prépare la liste avec les index d'origine
+    let spellsWithIndexes = state.spells.map((spell, originalIndex) => ({
+        ...spell,
+        originalIndex: originalIndex
+    }));
+
+    if (!state.openedDescs) state.openedDescs = [];
+
+    let filtered = spellsWithIndexes
+        .sort((a, b) => a.niveau - b.niveau)
+        .filter(s => s.nom.toLowerCase().includes(searchTerm))
+        .filter(s => filterRank === "all" || s.niveau.toString() === filterRank)
+        .filter(s => filterAction === "all" || s.temps === filterAction);
+
+    filtered.forEach((spell) => {
+        const uniqueKey = `spell-${spell.originalIndex}`;
+        const isOpened = state.openedDescs && state.openedDescs.includes(uniqueKey);
+        
+        const card = document.createElement('div');
+        card.className = "bg-zinc-900/40 border border-zinc-800 rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative";
+
+        card.onclick = (e) => {
+            if (e.target.closest('button')) return;
+            toggleDesc(uniqueKey);
+        };
+
+        card.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
+                <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
+                    ${spell.niveau == 0 ? 'Cantrips' : 'Niveau ' + spell.niveau}
+                </span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="editSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
+                <button onclick="deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-3">
+            <span class="px-2 py-1 rounded text-[9px] font-black uppercase bg-purple-900/30 border border-purple-800/40 text-purple-300">
+                ${spell.ecole || '-'}
+            </span>
+            <span class="px-2 py-1 rounded text-[9px] font-black uppercase bg-zinc-800 text-zinc-200">
+                ⚡ ${spell.temps || '-'}
+            </span>
+            <span class="px-2 py-1 rounded text-[9px] font-black uppercase bg-purple-900/20 border border-purple-800/30 text-purple-400">
+                ${spell.portee || '-'}
+            </span>
+        </div>
+
+        <div class="${isOpened ? 'block' : 'hidden'} mt-4 pt-4 border-t border-zinc-800 animate-in fade-in duration-300">
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 mb-4">
+                <div class="flex flex-col">
+                    <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Cible / Zone</span>
+                    <span class="text-[11px] text-zinc-200 font-medium">${spell.cible || '—'}</span>
                 </div>
-                <div class="flex gap-3">
-                    <button onclick="event.stopPropagation(); openModal('spell',${i})" class="text-zinc-600 hover:text-white">✎</button>
-                    <button onclick="event.stopPropagation(); state.spells.splice(${i},1);renderAll()" class="text-zinc-800 hover:text-red-500">✕</button>
+                <div class="flex flex-col">
+                    <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Durée</span>
+                    <span class="text-[11px] text-zinc-200 font-medium">${spell.duree || '—'}</span>
+                </div>
+                <div class="flex flex-col col-span-2">
+                    <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Temps d'incantation</span>
+                    <span class="text-[11px] text-zinc-200 font-medium">${spell.incantation || '-'}</span>
+                </div>
+                <div class="flex flex-col col-span-2">
+                    <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Composantes</span>
+                    <span class="text-[11px] text-zinc-200 font-medium">
+                        ${[
+                            spell.composantes?.v ? 'V' : '',
+                            spell.composantes?.s ? 'S' : '',
+                            spell.composantes?.m ? 'M' : ''
+                        ].filter(Boolean).join(', ') || 'Aucune'}
+                    </span>
                 </div>
             </div>
-            <div class="desc-collapse ${isOpen ? 'open' : ''} text-zinc-400 text-xs mt-2 italic whitespace-pre-wrap">${s.desc || ""}</div>
-        </div>`}).join('');
 
-    document.getElementById('spell-slots').innerHTML = state.spell_slots.map((s, i) => `
-        <div class="stat-box !p-2 border-purple-900/30">
-            <div class="text-[8px] font-black text-purple-500 uppercase">N${i + 1}</div>
-            <input type="number" value="${s.cur}" class="w-full text-center bg-transparent !border-none font-black text-sm" oninput="state.spell_slots[${i}].cur=parseInt(this.value)||0;renderAll()">
-        </div>`).join('');
+            <div class="grid border-t border-zinc-800/50 pt-2">
+                <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter mb-1">Description</span>
+                <span class="text-[11px] text-zinc-200 font-medium whitespace-pre-line">${spell.desc || '—'}</span>
+            </div>
+        </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderSpellSlots() {
+    const container = document.getElementById('spell-slots-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    
+    // On boucle de 1 à 9
+    for (let lvl = 1; lvl <= 9; lvl++) {
+        const slot = state.spellSlots[lvl];
+        
+        const div = document.createElement('div');
+        div.className = "bg-zinc-900/60 border border-zinc-800 rounded-lg p-2 flex flex-col items-center gap-1 min-w-0 w-full";
+        const dispo = slot.max - slot.used;
+        
+
+        div.innerHTML = `
+            <div class="flex justify-between w-full items-center mb-1">
+                <span class="text-[9px] font-black text-zinc-500 uppercase">Niv. ${lvl}</span>
+                <button onclick="setupMaxSlots(${lvl})" class="text-[10px] hover:text-purple-500 text-zinc-700">⚙️</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="updateUsedSlot(${lvl}, -1)" class="text-zinc-500 hover:text-white">-</button>
+                <span class="text-xs font-bold ${dispo <= 0 && slot.max > 0 ? 'text-red-500' : 'text-purple-400'}">
+                    ${slot.max > 0 ? dispo : '--'}
+                </span>
+                <button onclick="updateUsedSlot(${lvl}, 1)" class="text-zinc-500 hover:text-white">+</button>
+            </div>
+            <div class="w-full flex gap-1 mt-1">
+                ${slot.max > 0 ? Array.from({ length: slot.max }).map((_, i) => `
+                    <div class="h-1 flex-1 rounded-full ${i < dispo ? 'bg-purple-600' : 'bg-zinc-800'}"></div>
+                `).join('') : '<div class="h-1 w-full bg-zinc-800/30 rounded-full"></div>'}
+            </div>
+        `;
+        container.appendChild(div);
+    }
 }
 
 function renderInventoryList() {
@@ -714,8 +856,16 @@ function openModal(type, index = -1) {
             document.getElementById('m-skill-reset').value = item.reset;
         }
         if (type === 'spell') {
-            document.getElementById('m-spell-rank').value = item.rank;
-            document.getElementById('m-spell-school').value = item.school;
+            document.getElementById('m-spell-rank').value = s.niveau || 0;
+            document.getElementById('m-spell-school').value = s.ecole || 'abjuration';
+            document.getElementById('spell-action-type').value = s.temps || 'action';
+            document.getElementById('m-spell-range').value = s.portee || '';
+            document.getElementById('m-spell-target').value = s.cible || '';
+            document.getElementById('m-spell-duration').value = s.duree || '';
+
+            document.getElementById('comp-v').checked = s.composantes?.v || false;
+            document.getElementById('comp-s').checked = s.composantes?.s || false;
+            document.getElementById('comp-m').checked = s.composantes?.m || false;
         }
         if (type === 'item') {
             document.getElementById('m-item-weight').value = item.weight;
@@ -782,9 +932,22 @@ function saveData() {
     if (type === 'spell') {
         data = {
             ...data,
-            rank: parseInt(document.getElementById('m-spell-rank').value) || 0,
-            school: document.getElementById('m-spell-school').value
+            niveau: parseInt(document.getElementById('m-spell-rank').value) || 0,
+            ecole: document.getElementById('m-spell-school').value,
+            temps: document.getElementById('spell-action-type').value,
+            portee: document.getElementById('m-spell-range').value,
+            cible: document.getElementById('m-spell-target').value,
+            duree: document.getElementById('m-spell-duration').value,
+            incantation: document.getElementById('m-spell-incantation').value,
+
+            composantes: {
+                v: document.getElementById('comp-v').checked,
+                s: document.getElementById('comp-s').checked,
+                m: document.getElementById('comp-m').checked
+            },
+            prepare: true
         };
+
         if (index === -1) state.spells.push(data); else state.spells[index] = data;
     }
 
@@ -821,26 +984,36 @@ function toggleSkill(n) {
 }
 function updateLevel(v) { state.niveau = parseInt(v) || 1; state.hd_cur = state.niveau; renderAll(); }
 function updateHP(t, v) { if (t === 'cur') state.hp_cur = parseInt(v) || 0; else state.hp_max = parseInt(v) || 1; renderAll(); }
+
 function toggleDesc(id) {
-    if (state.openedDescs.includes(id)) state.openedDescs = state.openedDescs.filter(x => x !== id);
-    else state.openedDescs.push(id);
+    if (!state.openedDescs) state.openedDescs = [];
+
+    if (state.openedDescs.includes(id)) {
+        state.openedDescs = state.openedDescs.filter(x => x !== id);
+    } else {
+        state.openedDescs.push(id);
+    }
     renderAll();
 }
+
 function takeRest(type) {
     const p = getProf();
 
     if (type === 'long') {
         state.hp_cur = state.hp_max;
         state.hd_cur = state.niveau;
-        state.spell_slots.forEach(s => s.cur = s.max);
+        
+        if (state.spellSlots) {
+            for (let lvl in state.spellSlots) {
+                state.spellSlots[lvl].used = 0;
+            }
+        }
 
         if (state.blessures > 0) {
             state.blessures -= 1;
-        } else {
         }
     }
 
-    // --- CORRECTION DES CAPACITÉS ---
     state.capacites.forEach(c => {
         const effectiveMax = c.useProf ? p : (parseInt(c.max) || 0);
 
@@ -851,8 +1024,13 @@ function takeRest(type) {
         }
     });
 
+    // On appelle les rendus et la sauvegarde
+    renderAll(); // renderAll appelle déjà renderSpellSlots normalement
     saveToSupabase();
-    renderAll();
+    
+    // Petit feedback visuel
+    const msg = type === 'long' ? "Repos long terminé !" : "Repos court terminé !";
+    console.log(msg);
 }
 
 function renderExtras() {
@@ -1108,7 +1286,7 @@ function renderInspiration() {
 function renderBlessures() {
     const container = document.getElementById('blessures-container');
     if (!container) return; // Sécurité si l'élément n'existe pas encore
-    
+
     const statusLabel = document.getElementById('death-status');
     container.innerHTML = '';
 
@@ -1118,10 +1296,10 @@ function renderBlessures() {
     for (let i = 1; i <= 6; i++) {
         const isFilled = i <= state.blessures;
         const bolt = document.createElement('div');
-        
+
         // Style de la "case" éclair
         bolt.className = `cursor-pointer transition-all duration-300 transform ${isFilled ? 'scale-110' : 'hover:scale-110 opacit-50'}`;
-        
+
         bolt.innerHTML = `
             <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" 
                  style="filter: ${isFilled ? 'drop-shadow(0 0 8px rgba(220, 38, 38, 0.8))' : 'none'}">
@@ -1132,16 +1310,16 @@ function renderBlessures() {
                       stroke-linejoin="round"/>
             </svg>
         `;
-        
+
         bolt.onclick = () => {
             state.blessures = (state.blessures === i) ? i - 1 : i;
             renderAll();
             saveData(); // Sauvegarde sur Supabase
         };
-        
+
         container.appendChild(bolt);
     }
-    
+
     // Mise à jour du texte
     if (state.blessures >= 6) { statusLabel.innerText = "DÉCÉDÉ"; statusLabel.style.color = "#ef4444"; }
     else if (state.blessures >= 4) { statusLabel.innerText = "AGONISANT"; statusLabel.style.color = "#f97316"; }
@@ -1149,11 +1327,101 @@ function renderBlessures() {
     else { statusLabel.innerText = "STABLE"; statusLabel.style.color = "#71717a"; }
 }
 
+function getSortedSpells(criteria) {
+    let spells = [...state.spells];
+
+    if (criteria === 'niveau') {
+        return spells.sort((a, b) => a.niveau - b.niveau);
+    }
+    if (criteria === 'action') {
+        const order = { 'reaction': 1, 'bonus': 2, 'action': 3, 'rituel': 4 };
+        return spells.sort((a, b) => order[a.temps] - order[b.temps]);
+    }
+    // ... autres tris
+}
+
 function resetBlessures() {
     state.blessures = 0;
     renderAll();
     saveData();
 }
+
+function editSpell(index) {
+    editingSpellIndex = index;
+    const s = state.spells[index];
+
+    // Champs GÉNÉRIQUES (communs à toutes les modales)
+    document.getElementById('m-name').value = s.nom || "";
+    document.getElementById('m-desc').value = s.desc || "";
+
+    // Champs SPÉCIFIQUES au Grimoire
+    document.getElementById('m-spell-rank').value = s.niveau || 0;
+    document.getElementById('m-spell-school').value = s.ecole || 'évocation';
+    document.getElementById('spell-action-type').value = s.temps || 'action';
+    document.getElementById('m-spell-range').value = s.portee || '';
+    document.getElementById('m-spell-target').value = s.cible || '';
+    document.getElementById('m-spell-duration').value = s.duree || '';
+    document.getElementById('m-spell-incantation').value = s.incantation || '';
+
+    // Checkboxes
+    document.getElementById('comp-v').checked = s.composantes?.v || false;
+    document.getElementById('comp-s').checked = s.composantes?.s || false;
+    document.getElementById('comp-m').checked = s.composantes?.m || false;
+
+    // Configuration de la modale pour le type "spell"
+    document.getElementById('m-type').value = 'spell';
+    document.getElementById('m-index').value = index;
+
+    // On affiche la section des sorts et on cache les autres
+    document.getElementById('m-spell-fields').classList.remove('hidden');
+    document.getElementById('m-atk-fields').classList.add('hidden');
+    document.getElementById('m-skill-fields').classList.add('hidden');
+    document.getElementById('m-item-fields').classList.add('hidden');
+
+    // On change le titre de la modale
+    document.getElementById('modal-title').innerText = "Modifier le sort";
+
+    // Affiche la modale (Assure-toi que l'ID est bien modal-ui)
+    document.getElementById('modal-ui').classList.remove('hidden');
+}
+
+window.resetSpellFilters = () => {
+    // On remet les inputs à leurs valeurs initiales
+    const searchInput = document.getElementById('spell-search');
+    const rankSelect = document.getElementById('spell-filter-rank');
+    const actionSelect = document.getElementById('spell-filter-action');
+
+    if (searchInput) searchInput.value = "";
+    if (rankSelect) rankSelect.value = "all";
+    if (actionSelect) actionSelect.value = "all";
+
+    // On relance le rendu pour afficher tous les sorts
+    renderSpellsList();
+};
+
+window.updateUsedSlot = (lvl, change) => {
+    const slot = state.spellSlots[lvl];
+    if (!slot) return;
+
+    const consumption = -change; // On inverse le signe pour la logique "used"
+    const newVal = slot.used + consumption;
+    
+    // On vérifie qu'on reste entre 0 et le max
+    if (newVal >= 0 && newVal <= slot.max) {
+        state.spellSlots[lvl].used = newVal;
+        renderSpellSlots(); 
+        saveToSupabase();    
+    }
+};
+
+window.setupMaxSlots = (lvl) => {
+    const newMax = prompt(`Total d'emplacements pour le Niveau ${lvl} :`, state.spellSlots[lvl].max);
+    if (newMax !== null) {
+        state.spellSlots[lvl].max = parseInt(newMax) || 0;
+        renderSpellSlots();
+        saveToSupabase();
+    }
+};
 
 // --- INIT ---
 window.onload = checkUser;
