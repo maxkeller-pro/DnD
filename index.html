@@ -240,7 +240,8 @@
                     <div class="flex justify-between items-end mb-2 px-1">
                         <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Points de
                             Vie</span>
-                        <div id="hp-label" class="text-[10px] font-black uppercase tracking-tighter text-green-500">Sain
+                        <div id="hp-label" class="text-[10px] font-black uppercase tracking-tighter text-green-500">En
+                            forme
                         </div>
                     </div>
                     <div
@@ -445,25 +446,39 @@
                         <div id="spell-slots-container"
                             class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 mb-6"></div>
 
-                        <div
-                            class="mb-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-zinc-900/20 p-4 rounded-xl border border-zinc-800/50">
+                        <div class="mb-6 bg-zinc-900/20 p-4 rounded-xl border border-zinc-800/50 space-y-4">
 
-                            <div class="md:col-span-6 space-y-1">
+                            <div class="space-y-1">
                                 <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Rechercher un
                                     sort</label>
-                                <input type="text" id="spell-search" placeholder="Nom du sort..."
-                                    class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-2.5 focus:border-purple-500 outline-none"
-                                    oninput="renderSpellsList()">
+
+                                <div class="flex gap-2">
+
+                                    <div class="relative flex-1">
+                                        <input type="text" id="spell-search" placeholder="Nom du sort..."
+                                            class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-3 pl-10 focus:border-purple-500 outline-none transition-all h-[38px]"
+                                            oninput="renderSpellsList()">
+                                        <span
+                                            class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs">🔍</span>
+                                    </div>
+
+                                    <button onclick="openPrepModal()"
+                                        class="h-[38px] px-4 bg-purple-600/10 hover:bg-purple-600 text-purple-400 hover:text-white transition-all border border-purple-500/30 rounded-lg flex items-center gap-2 font-black uppercase text-[10px] tracking-wider whitespace-nowrap">
+                                        <span>📖</span>
+                                        <span>Préparer</span>
+                                    </button>
+
+                                </div>
                             </div>
 
-                            <div class="md:col-span-6 flex gap-2 items-end">
+                            <div class="flex flex-wrap md:flex-nowrap gap-3 items-end">
 
-                                <div class="flex-1 space-y-1">
+                                <div class="flex-1 min-w-[120px] space-y-1">
                                     <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Rang</label>
                                     <select id="spell-filter-rank"
-                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-2.5 focus:border-purple-500 outline-none"
+                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-xs p-2.5 focus:border-purple-500 outline-none cursor-pointer"
                                         onchange="renderSpellsList()">
-                                        <option value="all">Tous</option>
+                                        <option value="all">Tous les Rangs</option>
                                         <option value="0">Cantrips</option>
                                         <option value="1">Rang 1</option>
                                         <option value="2">Rang 2</option>
@@ -477,12 +492,12 @@
                                     </select>
                                 </div>
 
-                                <div class="flex-1 space-y-1">
+                                <div class="flex-1 min-w-[120px] space-y-1">
                                     <label class="text-[9px] uppercase font-black text-zinc-500 ml-1">Action</label>
                                     <select id="spell-filter-action"
-                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-[10px] p-2.5 font-bold uppercase focus:border-purple-500 outline-none"
+                                        class="w-full !bg-black/40 border-zinc-800 border rounded-lg text-[10px] p-2.5 font-bold uppercase focus:border-purple-500 outline-none cursor-pointer"
                                         onchange="renderSpellsList()">
-                                        <option value="all">Toutes</option>
+                                        <option value="all">Toutes Actions</option>
                                         <option value="action">Action</option>
                                         <option value="bonus">Bonus</option>
                                         <option value="reaction">Réaction</option>
@@ -490,14 +505,26 @@
                                     </select>
                                 </div>
 
-                                <button onclick="resetSpellFilters()" title="Réinitialiser"
-                                    class="h-[38px] px-3 bg-zinc-800 hover:bg-red-900/40 text-zinc-500 hover:text-red-500 transition-all border border-zinc-800 rounded-lg flex items-center justify-center mb-[1px]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+                                <div class="flex gap-2 shrink-0">
+                                    <button id="btn-filter-prepared" onclick="togglePreparedFilter()"
+                                        title="Sorts préparés uniquement"
+                                        class="h-[38px] px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 transition-all border border-zinc-800 rounded-lg flex items-center justify-center mb-[1px]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                        </svg>
+                                    </button>
+
+                                    <button onclick="resetSpellFilters()" title="Réinitialiser les filtres"
+                                        class="h-[38px] w-[38px] bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-all border border-zinc-700 rounded-lg flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -851,6 +878,42 @@
             </div>
         </div>
     </template>
+
+    <div id="modal-prep-spells" class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-black text-white uppercase tracking-widest">Préparation</h2>
+                <div id="prep-counter" class="text-purple-400 text-[10px] uppercase font-black mt-1">0 sorts sélectionnés</div>
+            </div>
+            <button onclick="closePrepModal()" class="text-zinc-500 hover:text-white transition text-2xl">×</button>
+        </div>
+
+        <div class="px-6 py-3 border-b border-zinc-800/50 bg-black/20 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
+            <button onclick="filterPrepByRank('all')" class="prep-rank-chip active-chip" data-rank="all">Tous</button>
+            <button onclick="filterPrepByRank('0')" class="prep-rank-chip" data-rank="0">0</button>
+            <button onclick="filterPrepByRank('1')" class="prep-rank-chip" data-rank="1">1</button>
+            <button onclick="filterPrepByRank('2')" class="prep-rank-chip" data-rank="2">2</button>
+            <button onclick="filterPrepByRank('3')" class="prep-rank-chip" data-rank="3">3</button>
+            <button onclick="filterPrepByRank('4')" class="prep-rank-chip" data-rank="4">4</button>
+            <button onclick="filterPrepByRank('5')" class="prep-rank-chip" data-rank="5">5</button>
+            <button onclick="filterPrepByRank('6')" class="prep-rank-chip" data-rank="6">6</button>
+            <button onclick="filterPrepByRank('7')" class="prep-rank-chip" data-rank="7">7</button>
+            <button onclick="filterPrepByRank('8')" class="prep-rank-chip" data-rank="8">8</button>
+            <button onclick="filterPrepByRank('9')" class="prep-rank-chip" data-rank="9">9</button>
+        </div>
+
+        <div id="prep-spells-list" class="p-4 overflow-y-auto space-y-2 flex-1 custom-scrollbar">
+            </div>
+
+        <div class="p-4 border-t border-zinc-800 bg-black/20 flex justify-end">
+            <button onclick="closePrepModal()" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase px-6 py-3 rounded-lg transition">
+                Terminer la préparation
+            </button>
+        </div>
+    </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
