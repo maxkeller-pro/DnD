@@ -210,3 +210,22 @@ input[type="number"] {
 .hp-input {
     overflow: visible;
 }
+
+.prep-rank-chip {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #1a1a1d;
+    border: 1px solid #333;
+    color: #666;
+    font-size: 10px;
+    font-weight: 900;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.prep-rank-chip.active-chip {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: #a855f7;
+    color: #a855f7;
+}

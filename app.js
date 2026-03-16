@@ -1,5 +1,6 @@
 // --- CONFIGURATION SUPABASE ---
 const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
+let filterPreparedOnly = false;
 
 const CONFIG = {
     production: {
@@ -356,7 +357,7 @@ function updateHPUI() {
             label.classList.add('text-amber-500');
             fill.classList.add('bg-amber-500');
         } else {
-            label.innerText = "Sain";
+            label.innerText = "En forme";
             label.classList.add('text-emerald-500');
             fill.classList.add('bg-emerald-500');
         }
@@ -654,10 +655,11 @@ function renderSpellsList() {
     const filterRank = document.getElementById('spell-filter-rank')?.value || "all";
     const filterAction = document.getElementById('spell-filter-action')?.value || "all";
 
-    container.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+    // On vide le container et on retire la grille directe pour gérer les sections
     container.innerHTML = '';
+    container.className = "space-y-6"; // Espacement entre les sections
 
-    // 1. On prépare la liste avec les index d'origine
+    // 1. Préparation de la liste avec les index d'origine
     let spellsWithIndexes = state.spells.map((spell, originalIndex) => ({
         ...spell,
         originalIndex: originalIndex
@@ -665,18 +667,56 @@ function renderSpellsList() {
 
     if (!state.openedDescs) state.openedDescs = [];
 
+    // 2. Filtrage global (commun aux deux sections)
     let filtered = spellsWithIndexes
-        .sort((a, b) => a.niveau - b.niveau)
         .filter(s => s.nom.toLowerCase().includes(searchTerm))
         .filter(s => filterRank === "all" || s.niveau.toString() === filterRank)
+        .filter(s => !filterPreparedOnly || s.prepare === true)
         .filter(s => filterAction === "all" || s.temps === filterAction);
 
-    filtered.forEach((spell) => {
+    // 3. Séparation en deux groupes
+    const preparedSpells = filtered.filter(s => s.prepare === true).sort((a, b) => a.niveau - b.niveau);
+    const grimoireSpells = filtered.filter(s => s.prepare !== true).sort((a, b) => a.niveau - b.niveau);
+
+    // 4. Rendu des sections
+    if (preparedSpells.length > 0) {
+        renderSpellSection(container, "Sorts Préparés", preparedSpells, true);
+    }
+
+    // On n'affiche le grimoire que si le filtre "Uniquement préparés" est désactivé
+    if (grimoireSpells.length > 0 && !filterPreparedOnly) {
+        renderSpellSection(container, "Grimoire (Non préparés)", grimoireSpells, false);
+    }
+}
+
+// Fonction auxiliaire pour générer une section (Titre + Grille)
+function renderSpellSection(parentContainer, title, spells, isPreparedSection) {
+    const section = document.createElement('div');
+    section.className = "space-y-4";
+
+    // Titre de la section avec ligne décorative
+    const header = document.createElement('div');
+    header.className = "flex items-center gap-4 px-1";
+    header.innerHTML = `
+        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap ${isPreparedSection ? 'text-purple-500' : 'text-zinc-600'}">
+            ${title} (${spells.length})
+        </h3>
+        <div class="h-px w-full bg-zinc-800/50"></div>
+    `;
+    section.appendChild(header);
+
+    // Grille de sorts
+    const grid = document.createElement('div');
+    grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+
+    spells.forEach(spell => {
         const uniqueKey = `spell-${spell.originalIndex}`;
-        const isOpened = state.openedDescs && state.openedDescs.includes(uniqueKey);
-        
+        const isOpened = state.openedDescs.includes(uniqueKey);
+        const isPrepared = spell.prepare === true;
+
         const card = document.createElement('div');
-        card.className = "bg-zinc-900/40 border border-zinc-800 rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative";
+        // Ajout d'une bordure plus marquée si préparé
+        card.className = `bg-zinc-900/40 border ${isPrepared ? 'border-purple-500/30' : 'border-zinc-800'} rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative`;
 
         card.onclick = (e) => {
             if (e.target.closest('button')) return;
@@ -685,12 +725,21 @@ function renderSpellsList() {
 
         card.innerHTML = `
         <div class="flex justify-between items-start mb-3">
-            <div>
-                <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
-                <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-                    ${spell.niveau == 0 ? 'Cantrips' : 'Niveau ' + spell.niveau}
-                </span>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSpellPreparation(${spell.originalIndex})" 
+                    title="${isPrepared ? 'Désélectionner' : 'Préparer ce sort'}"
+                    class="text-lg transition-all transform hover:scale-110 ${isPrepared ? 'grayscale-0 opacity-100' : 'grayscale opacity-20 hover:opacity-100'}">
+                    📖
+                </button>
+                
+                <div>
+                    <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
+                    <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
+                        ${spell.niveau == 0 ? 'Cantrips' : 'Niveau ' + spell.niveau}
+                    </span>
+                </div>
             </div>
+            
             <div class="flex gap-3">
                 <button onclick="editSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
                 <button onclick="deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
@@ -720,10 +769,6 @@ function renderSpellsList() {
                     <span class="text-[11px] text-zinc-200 font-medium">${spell.duree || '—'}</span>
                 </div>
                 <div class="flex flex-col col-span-2">
-                    <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Temps d'incantation</span>
-                    <span class="text-[11px] text-zinc-200 font-medium">${spell.incantation || '-'}</span>
-                </div>
-                <div class="flex flex-col col-span-2">
                     <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Composantes</span>
                     <span class="text-[11px] text-zinc-200 font-medium">
                         ${[
@@ -741,8 +786,11 @@ function renderSpellsList() {
             </div>
         </div>
         `;
-        container.appendChild(card);
+        grid.appendChild(card);
     });
+
+    section.appendChild(grid);
+    parentContainer.appendChild(section);
 }
 
 function renderSpellSlots() {
@@ -1395,6 +1443,13 @@ window.resetSpellFilters = () => {
     if (rankSelect) rankSelect.value = "all";
     if (actionSelect) actionSelect.value = "all";
 
+    filterPreparedOnly = false;
+    const btnPrepared = document.getElementById('btn-filter-prepared');
+
+    if (btnPrepared) {
+        btnPrepared.classList.remove('border-purple-500', 'text-purple-400', 'bg-purple-500/10');
+    }
+
     // On relance le rendu pour afficher tous les sorts
     renderSpellsList();
 };
@@ -1421,6 +1476,103 @@ window.setupMaxSlots = (lvl) => {
         renderSpellSlots();
         saveToSupabase();
     }
+};
+
+let currentPrepFilter = 'all';
+
+window.filterPrepByRank = (rank) => {
+    currentPrepFilter = rank.toString();
+    
+    document.querySelectorAll('.prep-rank-chip').forEach(btn => {
+        btn.classList.toggle('active-chip', btn.getAttribute('data-rank') === currentPrepFilter);
+    });
+    
+    openPrepModal(); 
+};
+
+window.togglePreparedFilter = () => {
+    filterPreparedOnly = !filterPreparedOnly;
+    const btn = document.getElementById('btn-filter-prepared');
+    
+    // Feedback visuel si le filtre est actif
+    if (filterPreparedOnly) {
+        btn.classList.add('border-purple-500', 'text-purple-400', 'bg-purple-500/10');
+    } else {
+        btn.classList.remove('border-purple-500', 'text-purple-400', 'bg-purple-500/10');
+    }
+    renderSpellsList();
+};
+
+// Ouvre la modale et génère la liste
+window.openPrepModal = () => {
+    const container = document.getElementById('prep-spells-list');
+    const counter = document.getElementById('prep-counter');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // 1. Filtrage par rang
+    let filteredSpells = [...state.spells];
+    if (currentPrepFilter !== 'all') {
+        filteredSpells = filteredSpells.filter(s => s.niveau.toString() === currentPrepFilter);
+    }
+
+    // 2. Tri par niveau puis par nom
+    filteredSpells.sort((a, b) => a.niveau - b.niveau || a.nom.localeCompare(b.nom));
+
+    // 3. Affichage
+    filteredSpells.forEach((spell) => {
+        // On récupère l'index original dans le state global pour la modification
+        const realIndex = state.spells.findIndex(s => s.nom === spell.nom);
+        const isPrepared = spell.prepare === true;
+
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-3 rounded-lg border transition cursor-pointer ${isPrepared ? 'bg-purple-500/10 border-purple-500/50' : 'bg-black/20 border-zinc-800 hover:border-zinc-700'}`;
+        
+        row.onclick = () => toggleSpellPrepInList(realIndex);
+
+        row.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="w-8 h-8 flex items-center justify-center rounded bg-zinc-800 text-[10px] font-black ${isPrepared ? 'text-purple-400 border-purple-500/50' : 'text-zinc-600 border-zinc-700'} border">
+                    ${spell.niveau == 0 ? 'C' : spell.niveau}
+                </div>
+                <div>
+                    <div class="text-xs font-bold ${isPrepared ? 'text-white' : 'text-zinc-400'} uppercase">${spell.nom}</div>
+                    <div class="text-[9px] text-zinc-500 uppercase font-bold">${spell.ecole || 'Sort'}</div>
+                </div>
+            </div>
+            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isPrepared ? 'bg-purple-500 border-purple-400 text-white' : 'border-zinc-800 text-transparent'}">
+                <span class="text-[10px] font-black">✓</span>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+
+    // Mise à jour du compteur
+    const totalPrepared = state.spells.filter(s => s.prepare).length;
+    if(counter) counter.innerText = `${totalPrepared} sort${totalPrepared > 1 ? 's' : ''} préparé${totalPrepared > 1 ? 's' : ''}`;
+
+    document.getElementById('modal-prep-spells').classList.remove('hidden');
+};
+
+window.toggleSpellPrepInList = (index) => {
+    state.spells[index].prepare = !state.spells[index].prepare;
+    openPrepModal(); // Rafraîchit la vue
+};
+
+window.closePrepModal = () => {
+    document.getElementById('modal-prep-spells').classList.add('hidden');
+    renderSpellsList(); // Rafraîchit la liste principale
+    saveToSupabase();   // Sauvegarde les changements
+};
+
+window.toggleSpellPreparation = (originalIndex) => {
+    const spell = state.spells[originalIndex];
+    // Alterne entre true et false
+    spell.prepare = !spell.prepare;
+    
+    renderSpellsList();
+    saveToSupabase(); // Sauvegarde l'état préparé
 };
 
 // --- INIT ---
