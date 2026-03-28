@@ -1,3 +1,5 @@
+const APP_VERSION = "1.0.0";
+
 // --- CONFIGURATION SUPABASE ---
 const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
 let filterPreparedOnly = false;
@@ -306,6 +308,7 @@ async function loadUserData(user) {
 // --- INITIALISATION ---
 // On utilise 'DOMContentLoaded' pour être sûr que l'ID 'auth-overlay' existe dans le DOM
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('app-version').innerText = `v${APP_VERSION}`;
     checkUser();
 });
 
