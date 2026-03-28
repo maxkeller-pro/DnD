@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 // --- CONFIGURATION SUPABASE ---
 const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
@@ -535,25 +535,47 @@ function renderAttaques() {
         const hitBonus = statMod + (a.prof ? p : 0) + (parseInt(a.misc) || 0);
         const dmgBonus = statMod + (parseInt(a.misc) || 0);
 
-        // Injection des textes de base
+        // Injection du nom et du bonus au toucher
         root.querySelector('.atk-nom').innerText = a.nom;
         root.querySelector('.atk-hit-bonus').innerText = (hitBonus >= 0 ? '+' : '') + hitBonus;
-        root.querySelector('.atk-dmg-display').innerText = `${a.dice}${dmgBonus !== 0 ? (dmgBonus > 0 ? '+' : '') + dmgBonus : ''}`;
-        root.querySelector('.atk-desc-text').innerText = a.desc || "";
 
-        // --- GESTION DU TYPE DE DÉGÂTS ---
+        // --- GESTION DES DÉGÂTS (Ligne 1 + Ligne 2) ---
+        const dmgDisplay = root.querySelector('.atk-dmg-display');
+        const bonusStr = dmgBonus !== 0 ? (dmgBonus > 0 ? '+' : '') + dmgBonus : '';
+        
+        // On construit le HTML pour permettre des styles différents sur la 2ème ligne
+        let dmgHTML = `<span>${a.dice}${bonusStr}</span>`;
+        
+        if (a.hasSecondary && a.dice2) {
+            dmgHTML += ` <span class="text-zinc-600 text-[10px] mx-0.5">+</span> <span class="text-amber-600/80">${a.dice2}</span>`;
+        }
+        dmgDisplay.innerHTML = dmgHTML;
+
+        // --- GESTION DU TYPE DE DÉGÂTS (Badges cumulés) ---
         const typeBadge = root.querySelector('.atk-type-badge');
         if (typeBadge) {
             if (a.damageType) {
-                typeBadge.innerText = a.damageType;
                 typeBadge.classList.remove('hidden');
-                // Optionnel : Coloration dynamique simple
+                
+                let typeHTML = `<span>${a.damageType}</span>`;
+                
+                // Si secondaire, on ajoute un séparateur et le deuxième type
+                if (a.hasSecondary && a.damageType2) {
+                    typeHTML += ` <span class="text-zinc-600 mx-1">/</span> <span>${a.damageType2}</span>`;
+                }
+                
+                typeBadge.innerHTML = typeHTML;
+
+                // Coloration dynamique simple (s'applique au premier type)
                 if (a.damageType === 'Feu') typeBadge.style.color = '#ef4444';
-                if (a.damageType === 'Froid') typeBadge.style.color = '#60a5fa';
+                else if (a.damageType === 'Froid') typeBadge.style.color = '#60a5fa';
+                else typeBadge.style.color = ''; // Reset si autre
             } else {
                 typeBadge.classList.add('hidden');
             }
         }
+
+        root.querySelector('.atk-desc-text').innerText = a.desc || "";
 
         // État déplié/plié
         if (state.openedDescs.includes(id)) root.querySelector('.atk-desc-container').classList.add('open');
@@ -964,11 +986,17 @@ function openModal(type, index = -1) {
         document.getElementById('m-name').value = item.nom;
         document.getElementById('m-desc').value = item.desc || "";
         if (type === 'attack') {
+            const hasSec = item.hasSecondary || false;
             document.getElementById('m-atk-stat').value = item.stat;
             document.getElementById('m-atk-prof').checked = item.prof;
             document.getElementById('m-atk-dice').value = item.dice;
             document.getElementById('m-atk-type').value = item.damageType || "";
             document.getElementById('m-atk-misc').value = item.misc;
+
+            document.getElementById('m-atk-has-secondary').checked = hasSec;
+            document.getElementById('m-atk-sec-container').classList.toggle('hidden', !hasSec);
+            document.getElementById('m-atk-dice2').value = item.dice2 || "";
+            document.getElementById('m-atk-type2').value = item.damageType2 || "";
         }
         if (type === 'skill') {
             const isProf = item.useProf || false;
@@ -1031,6 +1059,9 @@ function saveData() {
             prof: document.getElementById('m-atk-prof').checked,
             dice: document.getElementById('m-atk-dice').value,
             damageType: document.getElementById('m-atk-type').value,
+            hasSecondary: document.getElementById('m-atk-has-secondary').checked,
+            dice2: document.getElementById('m-atk-dice2').value,
+            damageType2: document.getElementById('m-atk-type2').value,
             misc: parseInt(document.getElementById('m-atk-misc').value) || 0
         };
         if (index === -1) state.attaques.push(data); else state.attaques[index] = data;
