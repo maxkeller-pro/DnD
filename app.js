@@ -1,4 +1,4 @@
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.2";
 
 // --- CONFIGURATION SUPABASE ---
 const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
@@ -21,7 +21,7 @@ const supabaseClient = supabase.createClient(currentConfig.URL, currentConfig.KE
 
 // --- DONNÉES DE RÉFÉRENCE ---
 const SKILLS_LIST = [
-    { n: "Athlétisme", s: "Force" }, { n: "Acrobaties", s: "Dextérité" }, { n: "Escroquerie", s: "Dextérité" }, { n: "Discrétion", s: "Dextérité" },
+    { n: "Athlétisme", s: "Force" }, { n: "Acrobaties", s: "Dextérité" }, { n: "Escamotage", s: "Dextérité" }, { n: "Discrétion", s: "Dextérité" },
     { n: "Arcanes", s: "Intelligence" }, { n: "Histoire", s: "Intelligence" }, { n: "Investigation", s: "Intelligence" }, { n: "Nature", s: "Intelligence" }, { n: "Religion", s: "Intelligence" },
     { n: "Dressage", s: "Sagesse" }, { n: "Médecine", s: "Sagesse" }, { n: "Perception", s: "Sagesse" }, { n: "Perspicacité", s: "Sagesse" }, { n: "Survie", s: "Sagesse" },
     { n: "Tromperie", s: "Charisme" }, { n: "Intimidation", s: "Charisme" }, { n: "Performance", s: "Charisme" }, { n: "Persuasion", s: "Charisme" }
@@ -52,6 +52,7 @@ function getInitialState() {
 
 // Au chargement initial de la page
 let state = getInitialState();
+let isBackingToSelection = false;
 
 // Dictionnaire des maîtrises par classe (Sert pour l'automatisation)
 const CLASS_SAVES = {
@@ -1405,32 +1406,47 @@ function switchTab(t) {
 }
 
 async function backToSelection() {
-    // 1. Sauvegarde une dernière fois avant de quitter
-    if (currentCharacterId) await saveToSupabase();
+    // 1. ANTIM-SPAM : Si on est déjà en train de sortir, on ignore le clic
+    if (isBackingToSelection) return;
+    isBackingToSelection = true;
 
-    // 2. RÉINITIALISATION DU CACHE LOCAL (Le State)
-    // On utilise la fonction de création d'un état vierge
-    window.state = getInitialState(); 
+    try {
+        // Feedback visuel optionnel : on change le curseur du body
+        document.body.style.cursor = 'wait';
 
-    // 3. NETTOYAGE PHYSIQUE DU DOM
-    // On vide les conteneurs pour éviter de voir les anciens sorts/items 
-    // pendant une fraction de seconde au prochain chargement.
-    const containers = ['spells-list', 'attacks-list', 'inventory-list', 'capacites-list'];
-    containers.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '';
-    });
+        // 2. Sauvegarde une dernière fois avant de quitter
+        if (currentCharacterId) {
+            await saveToSupabase();
+        }
 
-    // 4. Reset des variables de contrôle
-    currentCharacterId = null;
+        // 3. RÉINITIALISATION DU CACHE LOCAL
+        window.state = getInitialState(); 
 
-    // 5. Navigation
-    document.getElementById('app').classList.add('hidden');
-    loadCharactersList();
+        // 4. NETTOYAGE PHYSIQUE DU DOM
+        const containers = ['spells-list', 'attacks-list', 'inventory-list', 'capacites-list'];
+        containers.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
 
-    window.scrollTo(0, 0);
-    
-    console.log("Session terminée : État réinitialisé.");
+        // 5. Reset des variables de contrôle
+        currentCharacterId = null;
+
+        // 6. Navigation
+        document.getElementById('app').classList.add('hidden');
+        await loadCharactersList(); // On attend que la liste soit chargée
+
+        window.scrollTo(0, 0);
+        console.log("Session terminée : État réinitialisé.");
+
+    } catch (error) {
+        console.error("Erreur lors du retour à la sélection :", error);
+    } finally {
+        // 7. RÉOUVERTURE DU VERROU
+        // On remet le curseur et on autorise à nouveau la fonction
+        document.body.style.cursor = 'default';
+        isBackingToSelection = false;
+    }
 }
 
 function toggleInspiration() {
