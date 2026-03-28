@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 // --- CONFIGURATION SUPABASE ---
 const isProduction = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "";
@@ -149,6 +149,8 @@ async function createNewCharacter() {
 
 // Pour charger les données dans ton state
 async function selectCharacter(charId) {
+    state = getInitialState();
+
     const { data: row, error } = await supabaseClient
         .from('personnages')
         .select('*')
@@ -1372,14 +1374,32 @@ function switchTab(t) {
 }
 
 async function backToSelection() {
+    // 1. Sauvegarde une dernière fois avant de quitter
     if (currentCharacterId) await saveToSupabase();
 
+    // 2. RÉINITIALISATION DU CACHE LOCAL (Le State)
+    // On utilise la fonction de création d'un état vierge
+    window.state = getInitialState(); 
+
+    // 3. NETTOYAGE PHYSIQUE DU DOM
+    // On vide les conteneurs pour éviter de voir les anciens sorts/items 
+    // pendant une fraction de seconde au prochain chargement.
+    const containers = ['spells-list', 'attacks-list', 'inventory-list', 'capacites-list'];
+    containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+
+    // 4. Reset des variables de contrôle
     currentCharacterId = null;
 
+    // 5. Navigation
     document.getElementById('app').classList.add('hidden');
     loadCharactersList();
 
     window.scrollTo(0, 0);
+    
+    console.log("Session terminée : État réinitialisé.");
 }
 
 function toggleInspiration() {
