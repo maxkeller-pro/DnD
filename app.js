@@ -410,7 +410,21 @@ function renderAll(shouldSave = true) {
     // Stats & Init
     const init = getMod(state.stats.Dextérité);
     document.getElementById('init-bonus').innerText = (init >= 0 ? '+' : '') + init;
-    document.getElementById('passive-perception').innerText = 10 + getMod(state.stats.Sagesse) + (state.m_skills.includes("Perception") ? p : 0);
+    // 2. Extraire le niveau de perception (Objet ou Tableau pour la compatibilité)
+    let perceptionLevel = 0;
+    if (state.m_skills) {
+        if (Array.isArray(state.m_skills)) {
+            perceptionLevel = state.m_skills.includes("Perception") ? 1 : 0;
+        } else {
+            perceptionLevel = parseInt(state.m_skills["Perception"]) || 0;
+        }
+    }
+
+    // 3. Calculer et afficher
+    const wisdomMod = getMod(state.stats.Sagesse || 10);
+    const passiveValue = 10 + wisdomMod + (perceptionLevel * p);
+
+    document.getElementById('passive-perception').innerText = passiveValue;
 
     // HP
     document.getElementById('hp-cur').value = state.hp_cur;
@@ -481,14 +495,36 @@ function renderSavesList() {
 function renderSkillsList() {
     const p = getProf();
     const search = (document.getElementById('skill-search')?.value || "").toLowerCase();
+    
+    // Sécurité : s'assurer que m_skills est utilisable
+    if (Array.isArray(state.m_skills)) {
+        const legacy = [...state.m_skills];
+        state.m_skills = {};
+        legacy.forEach(name => state.m_skills[name] = 1);
+    }
+
     document.getElementById('skills-area').innerHTML = SKILLS_LIST
         .filter(s => s.n.toLowerCase().includes(search))
         .map(s => {
-            const isChecked = state.m_skills.includes(s.n);
-            const mod = getMod(state.stats[s.s] || 10) + (isChecked ? p : 0);
+            const level = state.m_skills[s.n] || 0; // 0, 1 ou 2
+            const mod = getMod(state.stats[s.s] || 10) + (level * p);
+            
+            // Classes CSS pour le visuel de la pastille
+            let dotClass = "border-zinc-700 bg-black/20"; // Défaut
+            let content = "";
+            
+            if (level === 1) {
+                dotClass = "bg-purple-500 border-purple-400"; // Maîtrise
+            } else if (level === 2) {
+                dotClass = "bg-amber-500 border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.4)]"; // Expertise
+                content = '<span class="text-[7px] text-black font-black">E</span>';
+            }
+
             return `
-                <div class="stat-row-layout hover:bg-white/5 transition-colors">
-                    <input type="checkbox" class="custom-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSkill('${s.n}')">
+                <div class="stat-row-layout hover:bg-white/5 transition-colors cursor-pointer" onclick="toggleSkill('${s.n}')">
+                    <div class="w-3 h-3 rounded-full border flex items-center justify-center transition-all ${dotClass}">
+                        ${content}
+                    </div>
                     <span class="text-[11px] font-medium text-zinc-400">${s.n}</span>
                     <span class="text-right font-black text-amber-500/80 text-xs">${(mod >= 0 ? '+' : '') + mod}</span>
                 </div>`;
@@ -655,11 +691,9 @@ function renderSpellsList() {
     const filterRank = document.getElementById('spell-filter-rank')?.value || "all";
     const filterAction = document.getElementById('spell-filter-action')?.value || "all";
 
-    // On vide le container et on retire la grille directe pour gérer les sections
     container.innerHTML = '';
-    container.className = "space-y-6"; // Espacement entre les sections
+    container.className = "space-y-6";
 
-    // 1. Préparation de la liste avec les index d'origine
     let spellsWithIndexes = state.spells.map((spell, originalIndex) => ({
         ...spell,
         originalIndex: originalIndex
@@ -667,82 +701,135 @@ function renderSpellsList() {
 
     if (!state.openedDescs) state.openedDescs = [];
 
-    // 2. Filtrage global (commun aux deux sections)
     let filtered = spellsWithIndexes
         .filter(s => s.nom.toLowerCase().includes(searchTerm))
         .filter(s => filterRank === "all" || s.niveau.toString() === filterRank)
-        .filter(s => !filterPreparedOnly || s.prepare === true)
         .filter(s => filterAction === "all" || s.temps === filterAction);
 
-    // 3. Séparation en deux groupes
-    const preparedSpells = filtered.filter(s => s.prepare === true).sort((a, b) => a.niveau - b.niveau);
-    const grimoireSpells = filtered.filter(s => s.prepare !== true).sort((a, b) => a.niveau - b.niveau);
+    // --- LOGIQUE DE SÉPARATION EN 3 GROUPES ---
+    
+    // 1. Les Cantrips (Niveau 0) - Toujours affichés en haut
+    const cantrips = filtered.filter(s => s.niveau == 0);
 
-    // 4. Rendu des sections
-    if (preparedSpells.length > 0) {
-        renderSpellSection(container, "Sorts Préparés", preparedSpells, true);
+    // 2. Les Sorts Préparés (Niveau 1+)
+    const preparedSpells = filtered.filter(s => s.niveau > 0 && s.prepare === true);
+
+    // 3. Le Grimoire (Niveau 1+ non préparés)
+    const grimoireSpells = filtered.filter(s => s.niveau > 0 && s.prepare !== true)
+                                   .sort((a, b) => a.niveau - b.niveau);
+
+    // --- RENDU DES SECTIONS ---
+
+    // Section Cantrips
+    if (cantrips.length > 0) {
+        renderSpellSection(container, "Sorts Mineurs (Cantrips)", cantrips, "text-amber-500");
     }
 
-    // On n'affiche le grimoire que si le filtre "Uniquement préparés" est désactivé
+    // Section Préparés
+    if (preparedSpells.length > 0) {
+        renderSpellSection(container, "Sorts Préparés", preparedSpells, "text-purple-500");
+    }
+
+    // Section Grimoire (masquée si le filtre "préparés uniquement" est actif)
     if (grimoireSpells.length > 0 && !filterPreparedOnly) {
-        renderSpellSection(container, "Grimoire (Non préparés)", grimoireSpells, false);
+        renderSpellSection(container, "Grimoire (Non préparés)", grimoireSpells, "text-zinc-600");
     }
 }
 
 // Fonction auxiliaire pour générer une section (Titre + Grille)
-function renderSpellSection(parentContainer, title, spells, isPreparedSection) {
+function renderSpellSection(parentContainer, title, spells, titleColorClass) {
     const section = document.createElement('div');
     section.className = "space-y-4";
 
-    // Titre de la section avec ligne décorative
     const header = document.createElement('div');
     header.className = "flex items-center gap-4 px-1";
     header.innerHTML = `
-        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap ${isPreparedSection ? 'text-purple-500' : 'text-zinc-600'}">
+        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap ${titleColorClass}">
             ${title} (${spells.length})
         </h3>
         <div class="h-px w-full bg-zinc-800/50"></div>
     `;
     section.appendChild(header);
 
-    // Grille de sorts
     const grid = document.createElement('div');
-    grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
-
+    // Ajout de items-start pour empêcher l'étirement vertical automatique
+    grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3 items-start";
+    
     spells.forEach(spell => {
         const uniqueKey = `spell-${spell.originalIndex}`;
         const isOpened = state.openedDescs.includes(uniqueKey);
         const isPrepared = spell.prepare === true;
+        const isCantrip = spell.niveau == 0;
 
         const card = document.createElement('div');
-        // Ajout d'une bordure plus marquée si préparé
-        card.className = `bg-zinc-900/40 border ${isPrepared ? 'border-purple-500/30' : 'border-zinc-800'} rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative`;
+
+        // --- CONFIGURATION DRAG & DROP ---
+        card.draggable = true;
+        card.dataset.index = spell.originalIndex; // On stocke l'index réel
+
+        card.ondragstart = (e) => {
+            e.dataTransfer.setData("text/plain", spell.originalIndex);
+            card.classList.add('opacity-50', 'scale-95');
+        };
+
+        card.ondragend = () => {
+            card.classList.remove('opacity-50', 'scale-95');
+        };
+
+        card.ondragover = (e) => {
+            e.preventDefault(); // Autorise le drop
+            card.classList.add('border-purple-500'); // Feedback visuel
+        };
+
+        card.ondragleave = () => {
+            card.classList.remove('border-purple-500');
+        };
+
+        card.ondrop = (e) => {
+            e.preventDefault();
+            card.classList.remove('border-purple-500');
+            const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+            const toIndex = spell.originalIndex;
+            
+            if (fromIndex !== toIndex) {
+                reorderSpells(fromIndex, toIndex);
+            }
+        };
+        
+        let borderColor = 'border-zinc-800';
+        if (isCantrip) borderColor = 'border-amber-500/30';
+        else if (isPrepared) borderColor = 'border-purple-500/30';
+
+        // AJOUT de h-fit : la carte ne prend que la hauteur dont elle a besoin
+        card.className = `bg-zinc-900/40 border ${borderColor} rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative h-fit`;
 
         card.onclick = (e) => {
             if (e.target.closest('button')) return;
             toggleDesc(uniqueKey);
         };
 
+        const prepButton = isCantrip ? '' : `
+            <button onclick="event.stopPropagation(); toggleSpellPreparation(${spell.originalIndex})" 
+                title="${isPrepared ? 'Désélectionner' : 'Préparer ce sort'}"
+                class="text-lg transition-all transform hover:scale-110 ${isPrepared ? 'grayscale-0 opacity-100' : 'grayscale opacity-20 hover:opacity-100'}">
+                📖
+            </button>`;
+
         card.innerHTML = `
         <div class="flex justify-between items-start mb-3">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSpellPreparation(${spell.originalIndex})" 
-                    title="${isPrepared ? 'Désélectionner' : 'Préparer ce sort'}"
-                    class="text-lg transition-all transform hover:scale-110 ${isPrepared ? 'grayscale-0 opacity-100' : 'grayscale opacity-20 hover:opacity-100'}">
-                    📖
-                </button>
-                
+                ${prepButton}
                 <div>
                     <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
-                    <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-                        ${spell.niveau == 0 ? 'Cantrips' : 'Niveau ' + spell.niveau}
+                    <span class="text-[10px] font-bold ${isCantrip ? 'text-amber-500' : 'text-purple-500'} uppercase tracking-widest">
+                        ${isCantrip ? 'Cantrip' : 'Niveau ' + spell.niveau}
                     </span>
                 </div>
             </div>
             
-            <div class="flex gap-3">
-                <button onclick="editSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
-                <button onclick="deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
+            <div class="flex gap-3 relative z-10">
+                <button onclick="event.stopPropagation(); editSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
+                <button onclick="event.stopPropagation(); deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
             </div>
         </div>
 
@@ -1026,8 +1113,17 @@ function toggleSave(s) {
     renderAll();
 }
 function toggleSkill(n) {
-    if (state.m_skills.includes(n)) state.m_skills = state.m_skills.filter(x => x !== n);
-    else state.m_skills.push(n);
+    // Initialisation si m_skills est un tableau (compatibilité ancienne version)
+    if (Array.isArray(state.m_skills)) {
+        const legacy = [...state.m_skills];
+        state.m_skills = {};
+        legacy.forEach(name => state.m_skills[name] = 1);
+    }
+
+    const current = state.m_skills[n] || 0;
+    // Cycle : 0 (Rien) -> 1 (Maîtrise) -> 2 (Expertise) -> 0
+    state.m_skills[n] = (current + 1) % 3;
+    
     renderAll();
 }
 function updateLevel(v) { state.niveau = parseInt(v) || 1; state.hd_cur = state.niveau; renderAll(); }
@@ -1433,6 +1529,17 @@ function editSpell(index) {
     document.getElementById('modal-ui').classList.remove('hidden');
 }
 
+window.deleteSpell = (index) => {
+    // On retire l'élément du tableau state.spells
+    state.spells.splice(index, 1);
+
+    // On rafraîchit l'affichage
+    renderSpellsList();
+    
+    // On sauvegarde la nouvelle liste dans Supabase
+    saveToSupabase();
+};
+
 window.resetSpellFilters = () => {
     // On remet les inputs à leurs valeurs initiales
     const searchInput = document.getElementById('spell-search');
@@ -1573,6 +1680,18 @@ window.toggleSpellPreparation = (originalIndex) => {
     
     renderSpellsList();
     saveToSupabase(); // Sauvegarde l'état préparé
+};
+
+window.reorderSpells = (fromIndex, toIndex) => {
+    // On extrait l'élément déplacé
+    const movedSpell = state.spells.splice(fromIndex, 1)[0];
+    
+    // On l'insère à sa nouvelle position
+    state.spells.splice(toIndex, 0, movedSpell);
+
+    // Mise à jour de l'interface et de la base de données
+    renderSpellsList();
+    saveToSupabase();
 };
 
 // --- INIT ---
