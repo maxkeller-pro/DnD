@@ -11,6 +11,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="p-4 md:p-8">
     <div id="auth-overlay" style="display: flex;"
         class="fixed inset-0 z-[100] bg-zinc-950 items-center justify-center p-4">
@@ -51,7 +52,8 @@
 
     <div id="char-selection-overlay"
         class="fixed inset-0 z-[90] bg-zinc-950 flex items-center justify-center p-4 hidden">
-        <div id="app-version" class="fixed top-4 left-4 text-[10px] font-mono text-zinc-600 tracking-widest uppercase pointer-events-none z-50">
+        <div id="app-version"
+            class="fixed top-4 left-4 text-[10px] font-mono text-zinc-600 tracking-widest uppercase pointer-events-none z-50">
             v0.0.0
         </div>
         <div class="w-full max-w-2xl">
@@ -625,9 +627,10 @@
                     </div>
                     <div id="m-atk-fields" class="hidden space-y-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1"><label
-                                    class="text-[9px] uppercase font-black text-red-500">Caractéristique</label>
-                                <select id="m-atk-stat" class="w-full p-3 !bg-zinc-950">
+                            <div class="space-y-1">
+                                <label class="text-[9px] uppercase font-black text-red-500">Caractéristique</label>
+                                <select id="m-atk-stat"
+                                    class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-xl text-white outline-none">
                                     <option value="Force">Force</option>
                                     <option value="Dextérité">Dextérité</option>
                                     <option value="Constitution">Constitution</option>
@@ -637,38 +640,84 @@
                                     <option value="Aucune">-</option>
                                 </select>
                             </div>
-                            <div class="flex items-end pb-3 gap-2"><input type="checkbox" id="m-atk-prof"
-                                    class="w-4 h-4"><label class="text-[10px] font-bold text-zinc-400">Maîtrise</label>
-                            </div>
-                            <div class="col-span-2">
-                                <label class="block text-[10px] font-black text-zinc-500 uppercase mb-1">Type de
-                                    Dégâts</label>
-                                <select id="m-atk-type"
-                                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white outline-none focus:border-red-500">
-                                    <option value="">Aucun</option>
-                                    <option value="Tranchant">Tranchant ⚔️</option>
-                                    <option value="Perçant">Perçant 🏹</option>
-                                    <option value="Contondant">Contondant 🔨</option>
-                                    <option value="Feu">Feu 🔥</option>
-                                    <option value="Froid">Froid ❄️</option>
-                                    <option value="Foudre">Foudre ⚡</option>
-                                    <option value="Acide">Acide 🧪</option>
-                                    <option value="Poison">Poison 🤢</option>
-                                    <option value="Psychique">Psychique 🧠</option>
-                                    <option value="Nécrotique">Nécrotique 💀</option>
-                                    <option value="Radiant">Radiant ✨</option>
-                                    <option value="Force">Force 💥</option>
-                                </select>
+                            <div class="flex items-end pb-3 gap-2">
+                                <input type="checkbox" id="m-atk-prof" class="w-4 h-4 accent-red-500">
+                                <label class="text-[10px] font-bold text-zinc-400 uppercase">Maîtrise</label>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1"><label
-                                    class="text-[9px] uppercase font-black text-zinc-500">Dégâts</label><input
-                                    type="text" id="m-atk-dice" placeholder="1d8+2" class="w-full p-3 !bg-zinc-950">
+
+                        <div class="p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl space-y-3">
+                            <label class="block text-[8px] font-black text-zinc-500 uppercase tracking-widest">Dégâts
+                                Principaux</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] uppercase font-black text-zinc-600">Dés (ex: 1d8)</label>
+                                    <input type="text" id="m-atk-dice" placeholder="1d8"
+                                        class="w-full p-2 !bg-zinc-950 border border-zinc-800 rounded-lg">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] uppercase font-black text-zinc-600">Type</label>
+                                    <select id="m-atk-type"
+                                        class="w-full p-2 !bg-zinc-950 border border-zinc-800 rounded-lg text-xs">
+                                        <option value="">Aucun</option>
+                                        <option value="Tranchant">Tranchant ⚔️</option>
+                                        <option value="Perçant">Perçant 🏹</option>
+                                        <option value="Contondant">Contondant 🔨</option>
+                                        <option value="Feu">Feu 🔥</option>
+                                        <option value="Froid">Froid ❄️</option>
+                                        <option value="Foudre">Foudre ⚡</option>
+                                        <option value="Acide">Acide 🧪</option>
+                                        <option value="Poison">Poison 🤢</option>
+                                        <option value="Psychique">Psychique 🧠</option>
+                                        <option value="Nécrotique">Nécrotique 💀</option>
+                                        <option value="Radiant">Radiant ✨</option>
+                                        <option value="Force">Force 💥</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="space-y-1"><label class="text-[9px] uppercase font-black text-zinc-500">Bonus
-                                    Mag.</label><input type="number" id="m-atk-misc" value="0"
-                                    class="w-full p-3 !bg-zinc-950"></div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2 px-1">
+                                <input type="checkbox" id="m-atk-has-secondary"
+                                    onchange="document.getElementById('m-atk-sec-container').classList.toggle('hidden', !this.checked)"
+                                    class="w-3 h-3 accent-red-500">
+                                <label class="text-[9px] font-black uppercase text-zinc-500 cursor-pointer">Ajouter des
+                                    dégâts secondaires</label>
+                            </div>
+
+                            <div id="m-atk-sec-container"
+                                class="hidden p-3 bg-red-900/5 border border-red-900/20 rounded-xl space-y-3">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[9px] uppercase font-black text-red-900/60">Dés (ex:
+                                            1d6)</label>
+                                        <input type="text" id="m-atk-dice2" placeholder="1d6"
+                                            class="w-full p-2 !bg-zinc-950 border border-zinc-800 rounded-lg">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[9px] uppercase font-black text-red-900/60">Type</label>
+                                        <select id="m-atk-type2"
+                                            class="w-full p-2 !bg-zinc-950 border border-zinc-800 rounded-lg text-xs">
+                                            <option value="Feu">Feu 🔥</option>
+                                            <option value="Froid">Froid ❄️</option>
+                                            <option value="Foudre">Foudre ⚡</option>
+                                            <option value="Radiant">Radiant ✨</option>
+                                            <option value="Nécrotique">Nécrotique 💀</option>
+                                            <option value="Poison">Poison 🤢</option>
+                                            <option value="Acide">Acide 🧪</option>
+                                            <option value="Force">Force 💥</option>
+                                            <option value="Psychique">Psychique 🧠</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1 pt-2">
+                            <label class="text-[9px] uppercase font-black text-zinc-500">Bonus Magique / Divers</label>
+                            <input type="number" id="m-atk-misc" value="0"
+                                class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-xl">
                         </div>
                     </div>
                     <div id="m-skill-fields" class="hidden space-y-4">
@@ -881,41 +930,47 @@
         </div>
     </template>
 
-    <div id="modal-prep-spells" class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        
-        <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
-            <div>
-                <h2 class="text-xl font-black text-white uppercase tracking-widest">Préparation</h2>
-                <div id="prep-counter" class="text-purple-400 text-[10px] uppercase font-black mt-1">0 sorts sélectionnés</div>
-            </div>
-            <button onclick="closePrepModal()" class="text-zinc-500 hover:text-white transition text-2xl">×</button>
-        </div>
+    <div id="modal-prep-spells"
+        class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div
+            class="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
 
-        <div class="px-6 py-3 border-b border-zinc-800/50 bg-black/20 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
-            <button onclick="filterPrepByRank('all')" class="prep-rank-chip active-chip" data-rank="all">Tous</button>
-            <button onclick="filterPrepByRank('0')" class="prep-rank-chip" data-rank="0">0</button>
-            <button onclick="filterPrepByRank('1')" class="prep-rank-chip" data-rank="1">1</button>
-            <button onclick="filterPrepByRank('2')" class="prep-rank-chip" data-rank="2">2</button>
-            <button onclick="filterPrepByRank('3')" class="prep-rank-chip" data-rank="3">3</button>
-            <button onclick="filterPrepByRank('4')" class="prep-rank-chip" data-rank="4">4</button>
-            <button onclick="filterPrepByRank('5')" class="prep-rank-chip" data-rank="5">5</button>
-            <button onclick="filterPrepByRank('6')" class="prep-rank-chip" data-rank="6">6</button>
-            <button onclick="filterPrepByRank('7')" class="prep-rank-chip" data-rank="7">7</button>
-            <button onclick="filterPrepByRank('8')" class="prep-rank-chip" data-rank="8">8</button>
-            <button onclick="filterPrepByRank('9')" class="prep-rank-chip" data-rank="9">9</button>
-        </div>
-
-        <div id="prep-spells-list" class="p-4 overflow-y-auto space-y-2 flex-1 custom-scrollbar">
+            <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-black text-white uppercase tracking-widest">Préparation</h2>
+                    <div id="prep-counter" class="text-purple-400 text-[10px] uppercase font-black mt-1">0 sorts
+                        sélectionnés</div>
+                </div>
+                <button onclick="closePrepModal()" class="text-zinc-500 hover:text-white transition text-2xl">×</button>
             </div>
 
-        <div class="p-4 border-t border-zinc-800 bg-black/20 flex justify-end">
-            <button onclick="closePrepModal()" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase px-6 py-3 rounded-lg transition">
-                Terminer la préparation
-            </button>
+            <div
+                class="px-6 py-3 border-b border-zinc-800/50 bg-black/20 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
+                <button onclick="filterPrepByRank('all')" class="prep-rank-chip active-chip"
+                    data-rank="all">Tous</button>
+                <button onclick="filterPrepByRank('0')" class="prep-rank-chip" data-rank="0">0</button>
+                <button onclick="filterPrepByRank('1')" class="prep-rank-chip" data-rank="1">1</button>
+                <button onclick="filterPrepByRank('2')" class="prep-rank-chip" data-rank="2">2</button>
+                <button onclick="filterPrepByRank('3')" class="prep-rank-chip" data-rank="3">3</button>
+                <button onclick="filterPrepByRank('4')" class="prep-rank-chip" data-rank="4">4</button>
+                <button onclick="filterPrepByRank('5')" class="prep-rank-chip" data-rank="5">5</button>
+                <button onclick="filterPrepByRank('6')" class="prep-rank-chip" data-rank="6">6</button>
+                <button onclick="filterPrepByRank('7')" class="prep-rank-chip" data-rank="7">7</button>
+                <button onclick="filterPrepByRank('8')" class="prep-rank-chip" data-rank="8">8</button>
+                <button onclick="filterPrepByRank('9')" class="prep-rank-chip" data-rank="9">9</button>
+            </div>
+
+            <div id="prep-spells-list" class="p-4 overflow-y-auto space-y-2 flex-1 custom-scrollbar">
+            </div>
+
+            <div class="p-4 border-t border-zinc-800 bg-black/20 flex justify-end">
+                <button onclick="closePrepModal()"
+                    class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase px-6 py-3 rounded-lg transition">
+                    Terminer la préparation
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
