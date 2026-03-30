@@ -1020,7 +1020,8 @@
                             <input type="file" id="mount-file-input" class="hidden" accept="image/*" onchange="window.handleMountImageUpload(this)">
                         </label>
 
-                        <input type="text" id="mount-name" placeholder="Nom de la monture" 
+                        <input type="text" 
+                            onchange="updateMountStat('name', this.value)" id="mount-name" placeholder="Nom de la monture" 
                             class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-transparent text-center text-3xl font-black text-white uppercase tracking-tighter outline-none border-b border-white/10 focus:border-amber-500">
                     </div>
 

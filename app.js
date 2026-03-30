@@ -1,7 +1,7 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
+import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload } from './js/ui-modals.js';
 import { getProf, SKILLS_LIST } from './js/utils.js';
 
@@ -589,10 +589,19 @@ window.closePrepModal = () => {
 };
 
 window.updateMountStat = function(key, value) {
-    if (!window.state.mountData) window.state.mountData = {};
-    window.state.mountData[key] = value;
+    // On met à jour la valeur dans le state global
+    // Si c'est un nombre (AC, HP, Stats), on le convertit
+    const numericFields = ['hp_cur', 'hp_max', 'ac', 'str', 'dex', 'con', 'int', 'wis', 'cha'];
     
-    saveToSupabase();
+    if (numericFields.includes(key)) {
+        window.state.mountData[key] = parseInt(value) || 0;
+    } else {
+        window.state.mountData[key] = value;
+    }
+
+    console.log("Update mountData:", key, value);
+    
+    saveToSupabase(); 
 };
 
 window.toggleSpellPreparation = (originalIndex) => {
@@ -842,4 +851,5 @@ window.handleMountImageUpload = handleMountImageUpload;
 window.renderMountPortrait = renderMountPortrait;
 window.renderMountInventory = renderMountInventory;
 window.renderMountActions = renderMountActions;
+window.renderMount = renderMount;
 window.SKILLS_LIST = SKILLS_LIST;

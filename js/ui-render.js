@@ -84,6 +84,7 @@ export function renderAll(shouldSave = true) {
     renderPortrait();
     renderMountPortrait();
     renderMountInventory();
+    renderMount();
     renderNotes();
     renderInspiration();
     renderMountActions();
@@ -730,6 +731,28 @@ export function renderMountInventory() {
     renderSide(state.mountData.inventoryLeft, 'mount-inv-left', 'mount-item-left');
     renderSide(state.mountData.inventoryRight, 'mount-inv-right', 'mount-item-right');
 }
+
+export function renderMount() {
+    const mount = window.state.mountData;
+    if (!mount) return;
+
+    // On remplit les champs HTML avec les données du state
+    document.getElementById('mount-name').value = mount.name || "";
+    document.getElementById('mount-ac').value = mount.ac || 10;
+    document.getElementById('mount-hp').value = mount.hp_cur || 0;
+    document.getElementById('mount-speed').value = mount.speed || "18m";
+    document.getElementById('mount-fly-speed').value = mount.fly_speed || "0m";
+    
+    // Stats
+    document.getElementById('mount-str').value = mount.str || 10;
+    document.getElementById('mount-dex').value = mount.dex || 10;
+    document.getElementById('mount-con').value = mount.con || 10;
+    document.getElementById('mount-int').value = mount.int || 10;
+    document.getElementById('mount-wis').value = mount.wis || 10;
+    document.getElementById('mount-cha').value = mount.cha || 10;
+
+    // N'oublie pas de vider et re-remplir tes listes d'attaques/capacités ici aussi
+};
 
 export function renderMountActions() {
     const state = window.state;
