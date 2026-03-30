@@ -130,7 +130,7 @@
                     <div class="w-full md:w-1/2 space-y-4">
                         <input type="text" id="char-name" placeholder="Nom du Héros"
                             class="text-4xl font-black w-full text-red-600 bg-transparent border-none outline-none tracking-tighter uppercase italic"
-                            oninput="state.nom=this.value; renderAll();">
+                            oninput="window.updateField('nom', this.value);">
 
                         <div class="flex flex-wrap gap-3 items-center">
                             <div
@@ -138,17 +138,18 @@
                                 <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Race</span>
                                 <select id="char-race"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
-                                    onchange="state.race=this.value; renderAll()">
+                                    onchange="window.updateField('race', this.value);">
                                     <option value="Humain">Humain</option>
                                     <option value="Elfe">Elfe</option>
                                     <option value="Nain">Nain</option>
                                     <option value="Halfelin">Halfelin</option>
-                                    <option value="Enfant de dragon">Enfant de dragon</option>
+                                    <option value="Enfant de dragon">Drakéïde</option>
                                     <option value="Gnome">Gnome</option>
                                     <option value="Demi-Elfe">Demi-Elfe</option>
                                     <option value="Demi-Orque">Demi-Orque</option>
                                     <option value="Tieffelin">Tieffelin</option>
                                     <option value="Goliath">Goliath</option>
+                                    <option value="Aasimar">Aasimar</option>
                                 </select>
                             </div>
                             <div
@@ -156,9 +157,9 @@
                                 <span
                                     class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
                                 <select id="char-class"
-                                    oninput="state.classe = this.value; updateClassSaves(this.value);"
+                                    oninput="window.updateField('classe', this.value); updateClassSaves(this.value);"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
-                                    onchange="state.classe=this.value; renderAll()">
+                                    onchange="window.updateField('classe', this.value); renderAll()">
                                     <option value="Artificier">Artificier</option>
                                     <option value="Barbare">Barbare</option>
                                     <option value="Barde">Barde</option>
@@ -192,7 +193,7 @@
                             <div class="flex items-baseline gap-1">
                                 <input type="number" id="speed" step="0.5"
                                     class="hp-input !text-3xl !w-20 text-center font-black text-emerald-500 bg-transparent border-none"
-                                    onchange="state.speed=parseFloat(this.value)||0; renderAll();">
+                                    onchange="window.updateField('speed', parseFloat(this.value)||0); renderAll();">
                                 <span class="text-[10px] font-bold text-zinc-600 uppercase">m</span>
                             </div>
                         </div>
@@ -200,7 +201,7 @@
                             <div class="text-[8px] uppercase text-gray-400 font-black tracking-widest">CA</div>
                             <input type="number" id="char-ac"
                                 class="w-full text-center bg-transparent border-none text-3xl font-black text-white p-0"
-                                onchange="state.ac=parseInt(this.value)||10; renderAll();">
+                                onchange="window.updateField('ac', parseInt(this.value)||10);renderAll();">
                         </div>
                         <div class="stat-box flex-1 md:w-28 border-yellow-600/30 bg-yellow-600/5">
                             <div class="text-[8px] uppercase text-yellow-500 font-black tracking-widest">Maîtrise</div>
@@ -273,7 +274,7 @@
                     <div
                         class="bg-black/50 h-16 rounded-2xl border border-gray-800 flex items-center justify-center gap-2 px-4">
                         <input type="number" id="hd-cur" class="hp-input !text-2xl !w-10 !text-blue-400"
-                            oninput="state.hd_cur=parseInt(this.value)||0; renderAll();">
+                            oninput="window.updateField('hd_cur', parseInt(this.value)||0); renderAll();">
                         <span class="text-gray-700 text-xl">/</span>
                         <span id="hd-max" class="text-xl font-black text-blue-400">1</span>
                     </div>
@@ -320,25 +321,25 @@
                                 <div class="text-[8px] font-black text-blue-300 uppercase mb-1">PP</div><input
                                     type="number" id="gold-pp"
                                     class="w-full text-center bg-transparent border-none text-lg font-black"
-                                    oninput="state.money.pp=parseInt(this.value)||0; renderAll();">
+                                    oninput="window.updateField('money.pp', parseInt(this.value)||0); renderAll();">
                             </div>
                             <div class="stat-box border-yellow-500/20 bg-yellow-500/5">
                                 <div class="text-[8px] font-black text-yellow-500 uppercase mb-1">PO</div><input
                                     type="number" id="gold-po"
                                     class="w-full text-center bg-transparent border-none text-lg font-black"
-                                    oninput="state.money.po=parseInt(this.value)||0; renderAll();">
+                                    oninput="window.updateField('money.po', parseInt(this.value)||0); renderAll();">
                             </div>
                             <div class="stat-box border-gray-400/20 bg-gray-400/5">
                                 <div class="text-[8px] font-black text-gray-400 uppercase mb-1">PA</div><input
                                     type="number" id="gold-pa"
                                     class="w-full text-center bg-transparent border-none text-lg font-black"
-                                    oninput="state.money.pa=parseInt(this.value)||0; renderAll();">
+                                    oninput="window.updateField('money.pa', parseInt(this.value)||0); renderAll();">
                             </div>
                             <div class="stat-box border-orange-800/20 bg-orange-800/5">
                                 <div class="text-[8px] font-black text-orange-800 uppercase mb-1">PC</div><input
                                     type="number" id="gold-pc"
                                     class="w-full text-center bg-transparent border-none text-lg font-black"
-                                    oninput="state.money.pc=parseInt(this.value)||0; renderAll();">
+                                    oninput="window.updateField('money.pc', parseInt(this.value)||0); renderAll();">
                             </div>
                         </div>
                     </section>
@@ -350,7 +351,7 @@
                         <div class="bg-black/40 p-4 rounded-xl border border-gray-800 mb-4">
                             <div class="flex justify-between mb-2 font-black text-[10px]">
                                 <span id="charge-label" class="text-emerald-500">0.0 kg</span>
-                                <select id="bag-type" onchange="state.maxWeight=parseInt(this.value); renderAll()"
+                                <select id="bag-type" onchange="window.updateField('maxWeight', parseInt(this.value)); renderAll()"
                                     class="bg-transparent border-none py-0 text-gray-500 uppercase">
                                     <option value="8">Pochette (8kg)</option>
                                     <option value="14" selected>Sac (14kg)</option>
@@ -973,7 +974,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js"></script>
+    <script src="app.js" type="module"></script>
 </body>
 
 </html>
