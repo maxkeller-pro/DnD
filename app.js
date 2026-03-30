@@ -1,8 +1,8 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderExtras, renderPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
-import { openModal, closeModal } from './js/ui-modals.js';
+import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
+import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload } from './js/ui-modals.js';
 import { getProf, SKILLS_LIST } from './js/utils.js';
 
 /**
@@ -104,25 +104,30 @@ function updateClassSaves(className) {
     }
 }
 
-function saveData() {
-    // 1. On récupère les éléments de contrôle
+export function saveData() {
     const typeEl = document.getElementById('m-type');
     const indexEl = document.getElementById('m-index');
     if (!typeEl || !indexEl) return;
 
     const type = typeEl.value;
     const index = parseInt(indexEl.value);
-    
-    // 2. On pointe sur l'état global
     const state = window.state;
+
+    // Déclaration de la variable de destination pour éviter l'erreur "undeclared variable"
+    let targetArray = null;
+
+    if (!state.mountData) {
+        state.mountData = { name: "", image: "", inventoryLeft: [], inventoryRight: [], attacks: [], skills: [] };
+    }
 
     let data = {
         nom: document.getElementById('m-name').value,
         desc: document.getElementById('m-desc').value
     };
 
-    // --- LOGIQUE ATTAQUE ---
-    if (type === 'attack') {
+    // --- 1. RÉCUPÉRATION DES DONNÉES SELON LE TYPE ---
+
+    if (type === 'attack' || type === 'mount-attack') {
         data = {
             ...data,
             stat: document.getElementById('m-atk-stat').value,
@@ -134,30 +139,28 @@ function saveData() {
             damageType2: document.getElementById('m-atk-type2').value,
             misc: parseInt(document.getElementById('m-atk-misc').value) || 0
         };
-        if (index === -1) state.attaques.push(data); 
-        else state.attaques[index] = data;
+        targetArray = (type === 'attack') ? state.attaques : state.mountData.attacks;
     }
 
-    // --- LOGIQUE CAPACITÉ (SKILL) ---
-    if (type === 'skill') {
+    else if (type === 'skill' || type === 'mount-skill') {
         const useProfValue = document.getElementById('m-skill-use-prof').checked;
         const maxVal = useProfValue ? -1 : (parseInt(document.getElementById('m-skill-max').value) || 0);
+        
+        // On récupère l'ancienne valeur current si on édite, sinon on initialise
+        const oldArray = (type === 'skill') ? state.capacites : state.mountData.skills;
+        const currentVal = (index === -1) ? (useProfValue ? 2 : maxVal) : (oldArray[index]?.current || 0);
 
         data = {
             ...data,
             max: maxVal,
-            // Si c'est nouveau (-1), on initialise le courant, sinon on garde l'existant
-            current: index === -1 ? (useProfValue ? window.getProf() : maxVal) : state.capacites[index].current,
+            current: currentVal,
             useProf: useProfValue,
             reset: document.getElementById('m-skill-reset').value
         };
-
-        if (index === -1) state.capacites.push(data); 
-        else state.capacites[index] = data;
+        targetArray = (type === 'skill') ? state.capacites : state.mountData.skills;
     }
 
-    // --- LOGIQUE SPELL ---
-    if (type === 'spell') {
+    else if (type === 'spell') {
         data = {
             ...data,
             niveau: parseInt(document.getElementById('m-spell-rank').value) || 0,
@@ -173,29 +176,34 @@ function saveData() {
             },
             prepare: index === -1 ? true : state.spells[index].prepare
         };
-        if (index === -1) state.spells.push(data); 
-        else state.spells[index] = data;
+        targetArray = state.spells;
     }
 
-    // --- LOGIQUE INVENTAIRE ---
-    if (type === 'item') {
+    else if (type === 'item' || type === 'mount-item-left' || type === 'mount-item-right') {
         data = {
             ...data,
             weight: parseFloat(document.getElementById('item-weight').value) || 0,
             qty: parseInt(document.getElementById('item-qty').value) || 1
         };
-        if (index === -1) state.inventaire.push(data); 
-        else state.inventaire[index] = data;
+        
+        if (type === 'item') targetArray = state.inventaire;
+        else if (type === 'mount-item-left') targetArray = state.mountData.inventoryLeft;
+        else if (type === 'mount-item-right') targetArray = state.mountData.inventoryRight;
     }
 
-    // 3. FERMETURE ET NETTOYAGE CRUCIAL
-    closeModal();
-    
-    // On réinitialise l'index à une valeur neutre (ex: -99) pour éviter les doubles push accidentels
-    indexEl.value = "-99"; 
+    // --- 2. ENREGISTREMENT DANS LE TABLEAU CIBLE ---
 
-    // 4. PERSISTANCE ET MISE À JOUR
-    saveToSupabase();
+    if (targetArray) {
+        if (index === -1) {
+            targetArray.push(data);
+        } else {
+            targetArray[index] = data;
+        }
+    }
+
+    // --- 3. FERMETURE ET SAUVEGARDE ---
+    closeModal();
+    indexEl.value = "-99"; 
     renderAll();
 }
 
@@ -580,6 +588,13 @@ window.closePrepModal = () => {
     saveToSupabase();   // Sauvegarde les changements
 };
 
+window.updateMountStat = function(key, value) {
+    if (!window.state.mountData) window.state.mountData = {};
+    window.state.mountData[key] = value;
+    
+    saveToSupabase();
+};
+
 window.toggleSpellPreparation = (originalIndex) => {
     const spell = window.state.spells[originalIndex];
     // Alterne entre true et false
@@ -622,6 +637,34 @@ window.updateField = (path, value) => {
     }
     
     saveToSupabase();
+};
+
+window.deleteMountItem = function(type, index) {
+    if (!confirm("Supprimer cet objet de la monture ?")) return;
+    
+    if (type === 'mount-item-left') {
+        window.state.mountData.inventoryLeft.splice(index, 1);
+    } else {
+        window.state.mountData.inventoryRight.splice(index, 1);
+    }
+    
+    saveToSupabase();
+    renderAll();
+};
+
+window.updateMountSkillUsage = function(index, change) {
+    const skill = window.state.mountData.skills[index];
+    if (!skill) return;
+
+    let newVal = (parseInt(skill.current) || 0) + change;
+    
+    // Bornes entre 0 et Max
+    if (newVal < 0) newVal = 0;
+    if (newVal > skill.max) newVal = skill.max;
+
+    skill.current = newVal;
+    saveToSupabase();
+    renderMountActions();
 };
 
 // Fonction pour ouvrir la modal en mode édition
@@ -793,4 +836,10 @@ window.addSession = addSession;
 window.switchSession = switchSession;
 window.saveNotes = saveNotes;
 window.deleteCurrentSession = deleteCurrentSession;
+window.openMountModal = openMountModal;
+window.closeMountModal = closeMountModal;
+window.handleMountImageUpload = handleMountImageUpload;
+window.renderMountPortrait = renderMountPortrait;
+window.renderMountInventory = renderMountInventory;
+window.renderMountActions = renderMountActions;
 window.SKILLS_LIST = SKILLS_LIST;
