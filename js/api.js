@@ -53,14 +53,14 @@ export async function loadUserData(user) {
     if (data) {
         // On met à jour l'ID global et le State
         window.currentCharacterId = data.id;
-        window.state = { ...getInitialState(), ...data.data };
+        window.state = { ...getInitialState(), ...data.data, mountData: { ...getInitialState().mountData, ...(data.data.mountData || {}) } };
 
         // On affiche l'application et on cache la sélection
         document.getElementById('char-selection-overlay').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
 
         // On lance le rendu global
-        
+        window.renderAll();
     } else {
         // Si aucun personnage n'existe, on reste sur l'écran de sélection
         console.log("Aucun personnage trouvé pour cet utilisateur.");
