@@ -82,8 +82,11 @@ export function renderAll(shouldSave = true) {
     renderInventoryList();
     renderExtras();
     renderPortrait();
+    renderMountPortrait();
+    renderMountInventory();
     renderNotes();
     renderInspiration();
+    renderMountActions();
 
     // --- 5. SAUVEGARDE ---
     if (shouldSave) saveToSupabase();
@@ -148,7 +151,6 @@ export function renderSavesList() {
 }
 
 export function renderSkillsList() {
-    console.log("test : ", SKILLS_LIST);
     const state = window.state;
     const container = document.getElementById('skills-area');
     if (!container || !state) return;
@@ -342,7 +344,7 @@ export function renderCapacites() {
                 window.state.capacites[i].current = val;
                 
                 if (window.saveToSupabase) {
-                    window.saveToSupabase(); 
+                    saveToSupabase(); 
                 }
             };
         } else {
@@ -662,6 +664,152 @@ export function renderPortrait() {
         img.src = "";
         img.classList.add('hidden');
         placeholder.classList.remove('hidden');
+    }
+}
+
+/**
+ * Met à jour l'affichage du portrait de la monture
+ */
+export function renderMountPortrait() {
+    const state = window.state;
+    const img = document.getElementById('mount-img');
+    const placeholder = document.getElementById('mount-placeholder');
+
+    if (!img || !placeholder || !state.mountData) return;
+
+    if (state.mountData.image && state.mountData.image.startsWith('data:image')) {
+        img.src = state.mountData.image;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    } else {
+        img.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    }
+}
+
+export function renderMountInventory() {
+    const state = window.state;
+    if (!state.mountData) return;
+
+    const renderSide = (items, containerId, type) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = ""; // On vide
+
+        if (!items || items.length === 0) {
+            container.innerHTML = `<div class="text-[10px] text-zinc-600 text-center py-4 italic">Sacoche vide</div>`;
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = "group bg-black/40 border border-zinc-800 hover:border-amber-600/50 p-2 rounded-lg transition-all cursor-pointer relative";
+            
+            // Au clic, on ouvre la modale en mode édition
+            itemEl.onclick = () => window.openModal(type, index);
+
+            itemEl.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="text-[11px] font-black uppercase text-zinc-300 group-hover:text-amber-500 transition-colors">${item.nom}</div>
+                        <div class="text-[9px] text-zinc-500 line-clamp-1">${item.desc || 'Pas de description'}</div>
+                    </div>
+                    <div class="text-[10px] font-bold text-amber-600/70 ml-2">${item.weight || 0}kg</div>
+                </div>
+                
+                <button onclick="event.stopPropagation(); window.deleteMountItem('${type}', ${index})" 
+                    class="absolute -top-1 -right-1 w-4 h-4 bg-red-900/80 text-white text-[8px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    ✕
+                </button>
+            `;
+            container.appendChild(itemEl);
+        });
+    };
+
+    renderSide(state.mountData.inventoryLeft, 'mount-inv-left', 'mount-item-left');
+    renderSide(state.mountData.inventoryRight, 'mount-inv-right', 'mount-item-right');
+}
+
+export function renderMountActions() {
+    const state = window.state;
+    if (!state || !state.mountData) return;
+
+    if (!state.mountData.attacks) state.mountData.attacks = [];
+    if (!state.mountData.skills) state.mountData.skills = [];
+
+    const actionsContainer = document.getElementById('mount-actions-list');
+    const skillsContainer = document.getElementById('mount-skills-list');
+
+    // --- 1. RENDU DES ATTAQUES ---
+    if (actionsContainer) {
+        actionsContainer.innerHTML = state.mountData.attacks.map((atk, i) => {
+            // Calcul des bonus (For ou Dex de la monture + Prof si coché)
+            const statMod = Math.floor(((state.mountData[atk.stat] || 10) - 10) / 2);
+            const profBonus = atk.prof ? 2 : 0; // Tu peux remplacer 2 par une variable de niveau si besoin
+            const hitBonus = statMod + profBonus + (atk.misc || 0);
+            const dmgBonus = statMod + (atk.misc || 0);
+
+            return `
+                <div class="group bg-white/5 border-l-2 border-amber-600 mb-2 overflow-hidden transition-all shadow-sm">
+                    <div onclick="this.parentElement.classList.toggle('is-expanded')" 
+                         class="flex justify-between items-center p-2 cursor-pointer hover:bg-white/10">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-black uppercase text-amber-800 tracking-wider">${atk.nom}</span>
+                            <div class="flex gap-2 mt-1">
+                                <span class="text-[9px] bg-amber-900/10 px-1 rounded text-amber-900 font-bold">
+                                    +${hitBonus} touché
+                                </span>
+                                <span class="text-[9px] bg-zinc-900/10 px-1 rounded text-zinc-700 font-bold">
+                                    ${atk.dice}${dmgBonus >= 0 ? '+' : ''}${dmgBonus} dégâts
+                                </span>
+                            </div>
+                        </div>
+                        <button onclick="event.stopPropagation(); openModal('mount-attack', ${i})" class="text-[10px] text-zinc-400 hover:text-amber-600">✎</button>
+                    </div>
+                    <div class="description-content px-2 pb-2 text-[9px] text-zinc-600 italic border-t border-amber-900/5 mt-1 hidden">
+                        ${atk.desc || 'Pas de description.'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- 2. RENDU DES CAPACITÉS ---
+    if (skillsContainer) {
+        skillsContainer.innerHTML = state.mountData.skills.map((sk, i) => {
+            const dots = sk.max > 0 ? `
+                <div class="flex items-center gap-1 bg-black/5 px-2 py-1 rounded-full">
+                    <button onclick="event.stopPropagation(); window.updateMountSkillUsage(${i}, -1)" class="text-[10px] font-bold text-zinc-500 hover:text-red-600">-</button>
+                    <span class="text-[9px] font-black text-zinc-800 min-w-[25px] text-center">${sk.current} / ${sk.max}</span>
+                    <button onclick="event.stopPropagation(); window.updateMountSkillUsage(${i}, 1)" class="text-[10px] font-bold text-zinc-500 hover:text-green-600">+</button>
+                </div>
+            ` : '';
+
+            const resetLabel = sk.reset === 'long' ? 'Repos Long' : sk.reset === 'court' ? 'Repos Court' : '';
+            const resetClass = sk.reset === 'long' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700';
+
+            return `
+                <div class="group bg-white/5 border-l-2 border-zinc-400 mb-2 overflow-hidden transition-all shadow-sm">
+                    <div onclick="this.parentElement.classList.toggle('is-expanded')" 
+                         class="p-2 cursor-pointer hover:bg-white/10">
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-black uppercase text-zinc-800">${sk.nom}</span>
+                                ${resetLabel ? `<span class="text-[7px] font-bold uppercase ${resetClass} self-start px-1 mt-0.5 rounded">${resetLabel}</span>` : ''}
+                            </div>
+                            ${dots}
+                        </div>
+                    </div>
+                    <div class="description-content px-2 pb-2 text-[9px] text-zinc-600 border-t border-zinc-900/5 mt-1 hidden">
+                        ${sk.desc || 'Pas de description.'}
+                        <div class="mt-2 text-right">
+                             <button onclick="event.stopPropagation(); openModal('mount-skill', ${i})" class="text-[8px] uppercase font-black text-zinc-400 hover:text-zinc-800 underline">Modifier</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 }
 

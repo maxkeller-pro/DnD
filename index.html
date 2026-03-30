@@ -105,6 +105,11 @@
                     </button>
                 </div>
             </div>
+            <button onclick="openMountModal()"
+                class="w-full mt-4 flex items-center justify-center gap-3 py-3 border border-amber-600/30 bg-amber-600/5 hover:bg-amber-600/10 rounded-xl transition-all group">
+                <span class="text-lg group-hover:scale-110 transition-transform">🐎</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Fiche Monture</span>
+            </button>
         </div>
 
         <div class="lg:col-span-3 card p-8 rounded-2xl shadow-2xl border border-gray-800">
@@ -351,7 +356,8 @@
                         <div class="bg-black/40 p-4 rounded-xl border border-gray-800 mb-4">
                             <div class="flex justify-between mb-2 font-black text-[10px]">
                                 <span id="charge-label" class="text-emerald-500">0.0 kg</span>
-                                <select id="bag-type" onchange="window.updateField('maxWeight', parseInt(this.value)); renderAll()"
+                                <select id="bag-type"
+                                    onchange="window.updateField('maxWeight', parseInt(this.value)); renderAll()"
                                     class="bg-transparent border-none py-0 text-gray-500 uppercase">
                                     <option value="8">Pochette (8kg)</option>
                                     <option value="14" selected>Sac (14kg)</option>
@@ -544,7 +550,7 @@
         </div>
 
         <div id="modal-ui"
-            class="hidden fixed inset-0 bg-black/98 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            class="hidden fixed inset-0 bg-black/98 flex items-center justify-center p-4 z-[200] backdrop-blur-sm">
             <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative">
                 <h2 id="modal-title"
                     class="text-xl font-black mb-6 text-white uppercase italic tracking-wider border-b border-zinc-800 pb-4">
@@ -969,6 +975,118 @@
                     class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase px-6 py-3 rounded-lg transition">
                     Terminer la préparation
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mount-modal" class="hidden fixed inset-0 z-[120] bg-black/95 backdrop-blur-md overflow-y-auto p-4 md:p-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-8 border-b border-amber-900/30 pb-4">
+                <div>
+                    <h2 class="text-3xl font-black text-amber-500 uppercase italic tracking-tighter">Fiche de Monture
+                    </h2>
+                    <p class="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Compagnon de voyage &
+                        Transport</p>
+                </div>
+                <button onclick="closeMountModal()" class="text-zinc-500 hover:text-white text-3xl">×</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="space-y-4">
+                    <h3 class="text-[11px] font-black uppercase text-amber-700 border-b border-amber-900/20 pb-2">
+                        Sacoche Gauche</h3>
+                    <div id="mount-inv-left"
+                        class="space-y-2 min-h-[200px] bg-black/20 p-4 rounded-2xl border border-zinc-800/50">
+                    </div>
+                    <button onclick="openModal('mount-item-left')"
+                        class="w-full py-2 border border-dashed border-zinc-700 text-[9px] uppercase font-black text-zinc-500 hover:text-amber-500 transition">
+                        + Ajouter Objet Monture
+                    </button>
+                </div>
+
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="relative aspect-video rounded-3xl overflow-hidden border border-amber-900/20 shadow-2xl bg-zinc-900 group cursor-pointer">
+    
+                        <img id="mount-img" src="" alt="Monture" class="w-full h-full object-cover opacity-60 hidden">
+                        
+                        <div id="mount-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 bg-zinc-900/50">
+                            <span class="text-6xl mb-2">🐎</span>
+                            <span class="text-xs uppercase font-bold tracking-widest text-zinc-500">Cliquer pour ajouter une image</span>
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none"></div>
+                        
+                        <label class="absolute inset-0 z-10 cursor-pointer">
+                            <input type="file" id="mount-file-input" class="hidden" accept="image/*" onchange="window.handleMountImageUpload(this)">
+                        </label>
+
+                        <input type="text" id="mount-name" placeholder="Nom de la monture" 
+                            class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-transparent text-center text-3xl font-black text-white uppercase tracking-tighter outline-none border-b border-white/10 focus:border-amber-500">
+                    </div>
+
+                    <div class="bg-[#f2e5d5] p-6 rounded-sm shadow-xl text-zinc-900 border-t-4 border-amber-800">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-amber-900/20 pb-4 mb-4">
+                            <div class="text-center">
+                                <span class="block text-[10px] font-bold uppercase text-amber-900">CA</span>
+                                <input type="number" onchange="updateMountStat('ac', this.value)" id="mount-ac" class="w-full bg-transparent text-2xl font-black text-center outline-none" value="11">
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-[10px] font-bold uppercase text-amber-900">PV Actuels</span>
+                                <input type="number" onchange="updateMountStat('hp_cur', this.value)" id="mount-hp" class="w-full bg-transparent text-2xl font-black text-center outline-none text-red-700" value="19">
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-[10px] font-bold uppercase text-amber-900">Vitesse Sol</span>
+                                <input type="text" onchange="updateMountStat('speed', this.value)" id="mount-speed" class="w-full bg-transparent text-xl font-black text-center outline-none" value="18m">
+                            </div>
+                            <div class="text-center border-l border-amber-900/10">
+                                <span class="block text-[10px] font-bold uppercase text-amber-900 text-blue-800">Vitesse Vol</span>
+                                <input type="text" onchange="updateMountStat('fly_speed', this.value)" id="mount-fly-speed" class="w-full bg-transparent text-xl font-black text-center outline-none text-blue-900" placeholder="0m">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-6 gap-2 text-center text-amber-950 mb-6">
+                            <div>
+                                <span class="text-[8px] font-black uppercase">For</span>
+                                <input type="number" onchange="updateMountStat('str', this.value)" id="mount-str" class="w-full bg-transparent font-bold text-center outline-none" value="18">
+                            </div>
+                            <div><span class="text-[8px] font-black uppercase">Dex</span><input type="number" onchange="updateMountStat('dex', this.value)" id="mount-dex" class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
+                            <div><span class="text-[8px] font-black uppercase">Con</span><input type="number" onchange="updateMountStat('con', this.value)" id="mount-con" class="w-full bg-transparent font-bold text-center outline-none" value="15"></div>
+                            <div><span class="text-[8px] font-black uppercase">Int</span><input type="number" onchange="updateMountStat('int', this.value)" id="mount-int" class="w-full bg-transparent font-bold text-center outline-none" value="2"></div>
+                            <div><span class="text-[8px] font-black uppercase">Sag</span><input type="number" onchange="updateMountStat('wis', this.value)" id="mount-wis" class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
+                            <div><span class="text-[8px] font-black uppercase">Cha</span><input type="number" onchange="updateMountStat('cha', this.value)" id="mount-cha" class="w-full bg-transparent font-bold text-center outline-none" value="7"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-amber-900/20 pt-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Attaques / Actions</h4>
+                                    <button onclick="openModal('mount-attack', -1)" class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
+                                </div>
+                                <div id="mount-actions-list" class="space-y-2"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Capacités Spéciales</h4>
+                                    <button onclick="openModal('mount-skill', -1)" class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
+                                </div>
+                                <div id="mount-skills-list" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3
+                        class="text-[11px] font-black uppercase text-amber-700 border-b border-amber-900/20 pb-2 text-right">
+                        Sacoche Droite</h3>
+                    <div id="mount-inv-right"
+                        class="space-y-2 min-h-[200px] bg-black/20 p-4 rounded-2xl border border-zinc-800/50">
+                    </div>
+                    <button onclick="openModal('mount-item-right')"
+                        class="w-full py-2 border border-dashed border-zinc-700 text-[9px] uppercase font-black text-zinc-500 hover:text-amber-500 transition">
+                        + Ajouter Objet Monture
+                    </button>
+                </div>
             </div>
         </div>
     </div>

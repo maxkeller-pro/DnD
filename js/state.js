@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.3.0";
+export const APP_VERSION = "2.0.0";
 
 export function getInitialState() {
     return {
@@ -16,6 +16,20 @@ export function getInitialState() {
         notes: {
             currentSessionId: Date.now(),
             sessions: [{ id: Date.now(), title: "Session Initiale", content: "" }]
+        },
+        mountData: {
+            name: "",
+            image: "",
+            hp_cur: 19,
+            hp_max: 19,
+            ac: 11,
+            speed: "18m",
+            fly_speed: "0m",
+            str: 18, dex: 12, con: 15, int: 2, wis: 12, cha: 7,
+            inventoryLeft: [],
+            inventoryRight: [],
+            attacks: [],
+            skills: []
         }
     };
 }
