@@ -164,7 +164,7 @@
                                 <select id="char-class"
                                     oninput="window.updateField('classe', this.value); updateClassSaves(this.value);"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
-                                    onchange="window.updateField('classe', this.value); renderAll()">
+                                    onchange="window.updateField('classe', this.value); calculateSpellStats(); renderAll()">
                                     <option value="Artificier">Artificier</option>
                                     <option value="Barbare">Barbare</option>
                                     <option value="Barde">Barde</option>
@@ -185,7 +185,7 @@
                                 <span class="text-[9px] font-black uppercase tracking-widest text-red-500">Niveau</span>
                                 <input type="number" id="char-level"
                                     class="w-12 bg-transparent border-none p-0 text-sm font-black text-center focus:ring-0"
-                                    oninput="updateLevel(this.value)">
+                                    oninput="updateLevel(this.value); calculateSpellStats();">
                             </div>
                         </div>
                     </div>
@@ -429,6 +429,38 @@
                         <button onclick="switchTab('spells')" id="tab-spells" class="tab-btn">✨ Grimoire
                             Magique</button>
                     </nav>
+
+                    <div id="spell-stats-header" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-zinc-900/40 p-4 rounded-xl border border-white/5 hidden">
+                        <div class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-purple-500/20">
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase text-purple-400 tracking-wider">DD de Sauvegarde</span>
+                                <div class="flex items-baseline gap-2">
+                                    <span id="display-spell-save-dc" class="text-3xl font-black text-white">13</span>
+                                    <span class="text-xs text-zinc-500 italic">Base: 8 + <span id="spell-mod-name">INT</span></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Bonus Objet</span>
+                                <input type="number" onchange="updateSpellMiscBonus(this.value)" id="spell-misc-bonus" 
+                                    class="w-12 bg-zinc-700 text-white text-center rounded border border-white/10 focus:border-purple-500 outline-none" 
+                                    value="0">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-blue-500/20">
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase text-blue-400 tracking-wider">Bonus d'Attaque</span>
+                                <div class="flex items-baseline gap-2">
+                                    <span id="display-spell-attack-bonus" class="text-3xl font-black text-white">+5</span>
+                                </div>
+                            </div>
+                            <div class="opacity-50 text-blue-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="section-actions" class="space-y-2">
                         <div id="attacks-list" class="space-y-2"></div>
