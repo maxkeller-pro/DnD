@@ -1,6 +1,7 @@
 // js/api.js
 import { supabaseClient } from './config.js';
 import { getInitialState } from './state.js';
+import { switchTab } from './ui-modals.js';
 
 /**
  * Sauvegarde l'état actuel du personnage (Update ou Insert via upsert)
@@ -60,10 +61,12 @@ export async function loadUserData(user) {
         document.getElementById('app').classList.remove('hidden');
 
         // On lance le rendu global
+        switchTab('actions');
         window.renderAll();
     } else {
         // Si aucun personnage n'existe, on reste sur l'écran de sélection
         console.log("Aucun personnage trouvé pour cet utilisateur.");
+        switchTab('actions');
         window.renderAll(true);
     }
 }

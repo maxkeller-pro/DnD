@@ -2,7 +2,7 @@ import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
 import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
-import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload } from './js/ui-modals.js';
+import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab } from './js/ui-modals.js';
 import { getProf, SKILLS_LIST } from './js/utils.js';
 
 /**
@@ -23,7 +23,38 @@ let filterPreparedOnly = false;
 window.currentCharacterId = null;
 window.state = getInitialState();
 
+window.calculateSpellStats = function() {
+    const s = window.state;
+    // 1. Déterminer le bonus de maîtrise (2 au niv 1, 3 au niv 5, etc.)
+    const mastery = Math.ceil(1 + (s.niveau / 4));
 
+    let castingStat = "Charisme"; 
+    if (s.classe === "Magicien") castingStat = "Intelligence";
+    if (s.classe === "Clerc" || s.classe === "Druide") castingStat = "Sagesse";
+
+    const statValue = s.stats[castingStat] || 10;
+    const statMod = Math.floor((statValue - 10) / 2);
+    
+    // 3. Récupérer le bonus d'objet magique (stocké dans ton state)
+    const miscBonus = parseInt(s.spellMiscBonus || 0);
+
+    // 4. Calculs finaux
+    const saveDC = 8 + mastery + statMod + miscBonus;
+    const attackBonus = mastery + statMod + miscBonus;
+
+    // 5. Affichage
+    document.getElementById('display-spell-save-dc').innerText = saveDC;
+    document.getElementById('display-spell-attack-bonus').innerText = (attackBonus >= 0 ? "+" : "") + attackBonus;
+    document.getElementById('spell-mod-name').innerText = castingStat.substring(0, 3).toUpperCase();
+    document.getElementById('spell-misc-bonus').value = miscBonus;
+};
+
+// Fonction pour mettre à jour le bonus d'objet
+window.updateSpellMiscBonus = function(val) {
+    window.state.spellMiscBonus = parseInt(val) || 0;
+    window.calculateSpellStats();
+    saveToSupabase(); // On n'oublie pas de sauvegarder !
+};
 
 // Au chargement initial de la page
 let isBackingToSelection = false;
@@ -381,15 +412,6 @@ function deleteCurrentSession() {
         saveToSupabase();
         renderNotes();
     }
-}
-
-
-
-function switchTab(t) {
-    document.getElementById('section-actions').classList.toggle('hidden', t !== 'actions');
-    document.getElementById('section-spells').classList.toggle('hidden', t !== 'spells');
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + t).classList.add('active');
 }
 
 async function backToSelection() {
@@ -852,4 +874,5 @@ window.renderMountPortrait = renderMountPortrait;
 window.renderMountInventory = renderMountInventory;
 window.renderMountActions = renderMountActions;
 window.renderMount = renderMount;
+window.switchTab = switchTab;
 window.SKILLS_LIST = SKILLS_LIST;

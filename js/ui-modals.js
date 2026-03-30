@@ -139,6 +139,34 @@ export function handleMountImageUpload(input) {
 }
 
 
+export function switchTab(t) {
+    // 1. On cache/affiche les sections
+    const sectionActions = document.getElementById('section-actions');
+    const sectionSpells = document.getElementById('section-spells');
+    
+    if (sectionActions) sectionActions.classList.toggle('hidden', t !== 'actions');
+    if (sectionSpells) sectionSpells.classList.toggle('hidden', t !== 'spells');
+
+    // 2. Gestion du Header de Sorts
+    const spellHeader = document.getElementById('spell-stats-header');
+    if (spellHeader) {
+        if (t === 'spells') {
+            spellHeader.classList.remove('hidden');
+            // On s'assure que la fonction de calcul existe avant de l'appeler
+            if (typeof calculateSpellStats === 'function') {
+                calculateSpellStats();
+            }
+        } else {
+            spellHeader.classList.add('hidden');
+        }
+    }
+
+    // 3. Mise à jour visuelle des onglets
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById('tab-' + t);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
 function resetAllFields() {
     // Champs communs
     document.getElementById('m-name').value = "";

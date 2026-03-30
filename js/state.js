@@ -1,4 +1,4 @@
-export const APP_VERSION = "2.0.1";
+export const APP_VERSION = "2.1.0";
 
 export function getInitialState() {
     return {
@@ -11,6 +11,7 @@ export function getInitialState() {
             4: { max: 0, used: 0 }, 5: { max: 0, used: 0 }, 6: { max: 0, used: 0 },
             7: { max: 0, used: 0 }, 8: { max: 0, used: 0 }, 9: { max: 0, used: 0 } 
         },
+        spellMiscBonus: 0,
         inspiration: false, blessures: 0, money: { pp: 0, po: 0, pa: 0, pc: 0 },
         languages: [], tools: [], portrait: "", openedDescs: [],
         notes: {
