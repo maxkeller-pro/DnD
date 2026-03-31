@@ -101,7 +101,7 @@ export const BAG_TYPES = {
     SACOCHE: { 
         name: "Sacoche", 
         main: 8, 
-        img: "../images/sacoche.png",
+        img: "images/sacoche.png",
         survivalLimits: {
         GOURDE: 1,
         PIERRE_A_FEU: 1,
@@ -115,7 +115,7 @@ export const BAG_TYPES = {
     CLASSIQUE: { 
         name: "Sac Standard", 
         main: 14, 
-        img: "../images/sac-standard.png",
+        img: "images/sac-standard.png",
         survivalLimits: {
             RATION: 6,
             GOURDE: 2,
@@ -132,7 +132,7 @@ export const BAG_TYPES = {
     GRAND: { 
         name: "Grand Sac", 
         main: 22, 
-        img: "../images/sac-grand.png",
+        img: "images/sac-grand.png",
         survivalLimits: {
             RATION: 10,
             GOURDE: 3,
