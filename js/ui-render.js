@@ -1,5 +1,5 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE } from './utils.js';
 import { saveToSupabase } from './api.js';
 
 /**
@@ -88,6 +88,7 @@ export function renderAll(shouldSave = true) {
     renderNotes();
     renderInspiration();
     renderMountActions();
+    renderBag();
 
     // --- 5. SAUVEGARDE ---
     if (shouldSave) saveToSupabase();
@@ -108,7 +109,7 @@ export function renderStatsList() {
                 <span class="text-[10px] uppercase font-bold text-zinc-500">${k}</span>
                 <div class="flex items-center gap-3">
                     <input type="number" value="${v}" 
-                        oninput="window.updateField('stats.${k}', this.value)" 
+                        onblur="window.updateField('stats.${k}', this.value)" 
                         class="w-12 text-center bg-transparent !border-none font-bold outline-none text-white">
                     
                     <span class="text-white font-black text-base w-8 text-right">
@@ -894,6 +895,96 @@ export function renderInspiration() {
         
         status.innerText = "Inactif";
         status.classList.replace('text-amber-500', 'text-zinc-600');
+    }
+}
+
+export function renderBag() {
+    const inv = window.state.inventory || { type: "CLASSIQUE", pochePrincipale: [], pocheSurvie: [] };
+    const currentType = inv.type || "CLASSIQUE";
+    const config = BAG_TYPES[currentType];
+
+    const imgEl = document.getElementById('bag-visual');
+    if (imgEl) imgEl.src = config.img;
+
+    // --- 1. CALCUL DES SLOTS ---
+    const mainList = inv.pochePrincipale || [];
+    const usedSlots = mainList.reduce((sum, item) => {
+        const t = parseInt(item.taille) || 0;
+        const q = parseInt(item.quantite) || 1;
+        return sum + (t * q);
+    }, 0);
+
+    const infoEl = document.getElementById('bag-info');
+    if (infoEl) infoEl.innerText = `${config.name} • ${usedSlots} / ${config.main} Slots`;
+
+    // --- 2. RENDU POCHE PRINCIPALE (Inchangé) ---
+    const mainListEl = document.getElementById('bag-main-list');
+    if (mainListEl) {
+        mainListEl.innerHTML = mainList.length === 0 
+            ? '<p class="text-center text-amber-900/30 py-4 italic text-sm">Le sac est vide...</p>' 
+            : '';
+        mainList.forEach((item, index) => {
+            mainListEl.innerHTML += `
+                <div class="group flex flex-col bg-white/40 p-3 rounded-xl border border-amber-900/5 hover:border-amber-900/20 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl opacity-50">📦</span>
+                            <div>
+                                <div class="font-bold text-amber-950">
+                                    ${item.nom} <span class="text-amber-600 text-sm">x${item.quantite || 1}</span>
+                                </div>
+                                <div class="text-[9px] text-amber-800/60 uppercase font-black tracking-tighter">
+                                    ${item.taille} slots/u • Total: ${(item.taille * (item.quantite || 1))} slots
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="removeItem(${index}, false)" class="p-2 text-red-700 hover:bg-red-50 rounded-lg text-xs">✕</button>
+                    </div>
+                    ${item.description ? `<div class="mt-2 text-[10px] italic text-amber-900/70 border-l-2 border-amber-900/10 pl-2">${item.description}</div>` : ''}
+                </div>`;
+        });
+    }
+
+    // --- 3. RENDU SURVIE (AVEC TRI : POSSÉDÉS EN PREMIER) ---
+    const survieListEl = document.getElementById('bag-survival-list');
+    if (survieListEl) {
+        survieListEl.innerHTML = '';
+        const survivalItems = inv.pocheSurvie || [];
+        const limits = config.survivalLimits || {};
+
+        // On crée un tableau des clés pour pouvoir les trier
+        const sortedKeys = Object.keys(limits)
+            .filter(key => limits[key] > 0) // On ne garde que ce que le sac autorise
+            .sort((a, b) => {
+                // On vérifie si l'item est possédé (qte > 0)
+                const hasA = survivalItems.find(i => i.key === a)?.quantite > 0 ? 1 : 0;
+                const hasB = survivalItems.find(i => i.key === b)?.quantite > 0 ? 1 : 0;
+                return hasB - hasA; // Les "1" (possédés) passent avant les "0"
+            });
+
+        sortedKeys.forEach(key => {
+            const max = limits[key];
+            const item = survivalItems.find(i => i.key === key);
+            const qte = item ? (item.quantite || 0) : 0;
+
+            if (qte > 0) {
+                survieListEl.innerHTML += `
+                    <div class="flex items-center justify-between bg-emerald-900/20 border border-emerald-900/30 p-2 rounded-lg shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="text-[11px] font-bold text-emerald-900">${item.nom}</span>
+                            <span class="text-[9px] font-black text-emerald-800 uppercase">Quantité : ${qte} / ${max}</span>
+                        </div>
+                        <button onclick="removeSurvivalItem('${key}')" class="text-emerald-900/60 hover:text-red-600 p-1 font-bold text-lg">✕</button>
+                    </div>`;
+            } else {
+                const template = CATALOGUE_SURVIE[key];
+                survieListEl.innerHTML += `
+                    <div class="border border-dashed border-emerald-900/10 p-2 rounded-lg flex items-center justify-between opacity-30">
+                        <span class="text-[10px] uppercase font-bold text-emerald-900/30">${template ? template.nom : key}</span>
+                        <span class="text-[9px] font-black text-emerald-900/20">0 / ${max}</span>
+                    </div>`;
+            }
+        });
     }
 }
 

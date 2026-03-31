@@ -1,11 +1,11 @@
-export const APP_VERSION = "2.1.0";
+export const APP_VERSION = "3.0.0";
 
 export function getInitialState() {
     return {
         nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
         hp_cur: 10, hp_max: 10, hd_cur: 1, maxWeight: 14, ac: 10, speed: 9,
         stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
-        m_saves: [], m_skills: {}, attaques: [], capacites: [], inventaire: [], spells: [],
+        m_saves: [], m_skills: {}, attaques: [], capacites: [], spells: [],
         spellSlots: { 
             1: { max: 0, used: 0 }, 2: { max: 0, used: 0 }, 3: { max: 0, used: 0 },
             4: { max: 0, used: 0 }, 5: { max: 0, used: 0 }, 6: { max: 0, used: 0 },
@@ -17,6 +17,13 @@ export function getInitialState() {
         notes: {
             currentSessionId: Date.now(),
             sessions: [{ id: Date.now(), title: "Session Initiale", content: "" }]
+        },
+        inventory: {
+            type: 'Sac Classique',
+            capacityMax: 14,
+            survivalMax: 2,
+            pochePrincipale: [],
+            pocheSurvie: []
         },
         mountData: {
             name: "",
