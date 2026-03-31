@@ -101,44 +101,51 @@ export const BAG_TYPES = {
     SACOCHE: { 
         name: "Sacoche", 
         main: 8, 
-        img: "images/sacoche.png",
+        img: "../images/sacoche.png",
         survivalLimits: {
-            GOURDE: 1,
-            RATION: 4,
-            PEAU: 1,
-            COUVERTURE: 1
+        GOURDE: 1,
+        PIERRE_A_FEU: 1,
+        HACHETTE: 1,
+        RATION: 4,
+        PEAU: 1,
+        COUVERTURE: 1,
+        KIT_SOIN: 1
         }
     },
     CLASSIQUE: { 
         name: "Sac Standard", 
         main: 14, 
-        img: "images/sac-standard.png",
+        img: "../images/sac-standard.png",
         survivalLimits: {
             RATION: 6,
             GOURDE: 2,
             HACHETTE: 1,
-            TORCHE: 3,
+            TORCHE: 1,
             PIERRE_A_FEU: 1,
-            KIT_SOIN: 1,
+        PETIT_BOIS: 1,
+            KIT_SOIN: 2,
             COUVERTURE: 1,
+        CORDE: 1,
             PEAU: 1
         }
     },
     GRAND: { 
         name: "Grand Sac", 
         main: 22, 
-        img: "images/sac-grand.png",
+        img: "../images/sac-grand.png",
         survivalLimits: {
             RATION: 10,
             GOURDE: 3,
             HACHETTE: 1,
-            TORCHE: 6,
+            TORCHE: 2,
             PIERRE_A_FEU: 1,
-            KIT_SOIN: 2,
+        PETIT_BOIS: 2,
+            KIT_SOIN: 3,
             COUVERTURE: 2,
-            PEAU: 2,
+            PEAU: 1,
             CORDE: 1,
-            BUCHE: 2
+        LAMPE: 1,
+            BUCHE: 1
         }
     }
 };

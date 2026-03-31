@@ -910,6 +910,11 @@ export function renderBag() {
     const imgEl = document.getElementById('bag-visual');
     if (imgEl) imgEl.src = config.img;
 
+    const selector = document.getElementById('bag-type-selector');
+    if (selector) {
+        selector.value = currentType; 
+    }
+
     // --- 1. CALCUL DES SLOTS ---
     const mainList = inv.pochePrincipale || [];
     const usedSlots = mainList.reduce((sum, item) => {
