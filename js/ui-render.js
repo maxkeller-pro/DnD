@@ -1,5 +1,5 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE } from './utils.js';
 import { saveToSupabase } from './api.js';
 
 /**
@@ -62,14 +62,14 @@ export function renderAll(shouldSave = true) {
     }
     const wisdomMod = getMod(state.stats.Sagesse || 10);
     const passiveValue = 10 + wisdomMod + (perceptionLevel * p);
-    
+
     const passiveEl = document.getElementById('passive-perception');
     if (passiveEl) passiveEl.innerText = passiveValue;
 
     // --- 4. APPELS DES RENDUS DE LISTES ---
     // On s'assure que ces fonctions existent avant de les appeler
     if (window.updateHPUI) window.updateHPUI();
-    
+
     // Listes dynamiques (doivent être exportées sur window ou présentes dans ce fichier)
     renderStatsList();
     renderSavesList();
@@ -88,6 +88,7 @@ export function renderAll(shouldSave = true) {
     renderNotes();
     renderInspiration();
     renderMountActions();
+    renderBag();
 
     // --- 5. SAUVEGARDE ---
     if (shouldSave) saveToSupabase();
@@ -102,13 +103,13 @@ export function renderStatsList() {
     container.innerHTML = statsOrder.map(k => {
         const v = window.state.stats[k] || 10;
         const mod = getMod(v);
-        
+
         return `
             <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
                 <span class="text-[10px] uppercase font-bold text-zinc-500">${k}</span>
                 <div class="flex items-center gap-3">
                     <input type="number" value="${v}" 
-                        oninput="window.updateField('stats.${k}', this.value)" 
+                        onblur="window.updateField('stats.${k}', this.value)" 
                         class="w-12 text-center bg-transparent !border-none font-bold outline-none text-white">
                     
                     <span class="text-white font-black text-base w-8 text-right">
@@ -130,7 +131,7 @@ export function renderSavesList() {
     container.innerHTML = statsOrder.map(s => {
         // On vérifie si la sauvegarde est maîtrisée (présente dans le tableau m_saves)
         const isChecked = state.m_saves && state.m_saves.includes(s);
-        
+
         // Calcul du modificateur : Mod de Stat + (Bonus de Maîtrise si coché)
         const baseMod = getMod(state.stats[s] || 10);
         const totalMod = baseMod + (isChecked ? p : 0);
@@ -158,7 +159,7 @@ export function renderSkillsList() {
 
     const p = getProf();
     const search = (document.getElementById('skill-search')?.value || "").toLowerCase();
-    
+
     // --- 1. Sécurité & Migration (Si m_skills est encore un tableau) ---
     if (Array.isArray(state.m_skills)) {
         const legacy = [...state.m_skills];
@@ -174,11 +175,11 @@ export function renderSkillsList() {
             const level = state.m_skills[s.n] || 0; // 0: rien, 1: Maîtrise, 2: Expertise
             const baseStatMod = getMod(state.stats[s.s] || 10);
             const totalMod = baseStatMod + (level * p);
-            
+
             // --- 3. Gestion Visuelle ---
-            let dotClass = "border-zinc-700 bg-black/20"; 
+            let dotClass = "border-zinc-700 bg-black/20";
             let content = "";
-            
+
             if (level === 1) {
                 dotClass = "bg-purple-500 border-purple-400"; // Maîtrise
             } else if (level === 2) {
@@ -204,9 +205,9 @@ export function renderAttaques() {
     const state = window.state;
     const container = document.getElementById('attacks-list');
     const template = document.getElementById('template-attaque');
-    
+
     if (!container || !template || !state.attaques) return;
-    
+
     container.innerHTML = '';
     const p = getProf();
 
@@ -227,7 +228,7 @@ export function renderAttaques() {
         // 3. Gestion des dégâts
         const dmgDisplay = root.querySelector('.atk-dmg-display');
         const bonusStr = dmgBonus !== 0 ? (dmgBonus > 0 ? '+' : '') + dmgBonus : '';
-        
+
         let dmgHTML = `<span>${a.dice}${bonusStr}</span>`;
         if (a.hasSecondary && a.dice2) {
             dmgHTML += ` <span class="text-zinc-600 text-[10px] mx-0.5">+</span> <span class="text-amber-600/80">${a.dice2}</span>`;
@@ -248,7 +249,7 @@ export function renderAttaques() {
                 // Coloration dynamique
                 if (a.damageType === 'Feu') typeBadge.style.color = '#ef4444';
                 else if (a.damageType === 'Froid') typeBadge.style.color = '#60a5fa';
-                else typeBadge.style.color = ''; 
+                else typeBadge.style.color = '';
             } else {
                 typeBadge.classList.add('hidden');
             }
@@ -270,11 +271,11 @@ export function renderAttaques() {
             if (window.openModal) window.openModal('attack', i);
         };
 
-        root.querySelector('.atk-delete').onclick = () => { 
-            if (confirm('Supprimer ?')) { 
-                state.attaques.splice(i, 1); 
-                window.renderAll(); 
-            } 
+        root.querySelector('.atk-delete').onclick = () => {
+            if (confirm('Supprimer ?')) {
+                state.attaques.splice(i, 1);
+                window.renderAll();
+            }
         };
 
         // 7. Drag & Drop
@@ -295,9 +296,9 @@ export function renderCapacites() {
     const state = window.state;
     const container = document.getElementById('skills-list'); // Note: ton ID est skills-list dans le HTML original
     const template = document.getElementById('template-capacite');
-    
+
     if (!container || !template || !state.capacites) return;
-    
+
     container.innerHTML = '';
     const p = getProf();
 
@@ -343,9 +344,9 @@ export function renderCapacites() {
                 e.target.value = val;
 
                 window.state.capacites[i].current = val;
-                
+
                 if (window.saveToSupabase) {
-                    saveToSupabase(); 
+                    saveToSupabase();
                 }
             };
         } else {
@@ -427,7 +428,7 @@ export function renderSpellsList() {
 
     // 3. Le Grimoire (Niveau 1+ non préparés)
     const grimoireSpells = filtered.filter(s => s.niveau > 0 && s.prepare !== true)
-                                   .sort((a, b) => a.niveau - b.niveau);
+        .sort((a, b) => a.niveau - b.niveau);
 
     // --- RENDU DES SECTIONS ---
     if (cantrips.length > 0) {
@@ -446,11 +447,11 @@ export function renderSpellsList() {
 export function renderSpellSlots() {
     const state = window.state;
     const container = document.getElementById('spell-slots-container');
-    
+
     if (!container || !state.spellSlots) return;
 
     container.innerHTML = '';
-    
+
     // On boucle de 1 à 9 (les niveaux de sorts)
     for (let lvl = 1; lvl <= 9; lvl++) {
         const slot = state.spellSlots[lvl];
@@ -458,7 +459,7 @@ export function renderSpellSlots() {
 
         const div = document.createElement('div');
         div.className = "bg-zinc-900/60 border border-zinc-800 rounded-lg p-2 flex flex-col items-center gap-1 min-w-0 w-full";
-        
+
         const dispo = slot.max - slot.used;
 
         div.innerHTML = `
@@ -495,7 +496,7 @@ export function renderBlessures() {
     const state = window.state;
     const container = document.getElementById('blessures-container');
     const statusLabel = document.getElementById('death-status');
-    
+
     if (!container) return;
 
     container.innerHTML = '';
@@ -508,9 +509,8 @@ export function renderBlessures() {
         const bolt = document.createElement('div');
 
         // Style de la "case" éclair
-        bolt.className = `cursor-pointer transition-all duration-300 transform ${
-            isFilled ? 'scale-110' : 'hover:scale-110 opacity-50'
-        }`;
+        bolt.className = `cursor-pointer transition-all duration-300 transform ${isFilled ? 'scale-110' : 'hover:scale-110 opacity-50'
+            }`;
 
         bolt.innerHTML = `
             <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" 
@@ -526,7 +526,7 @@ export function renderBlessures() {
         bolt.onclick = () => {
             // Logique de toggle : si on clique sur le dernier éclair rempli, on l'enlève
             state.blessures = (state.blessures === i) ? i - 1 : i;
-            
+
             // On rafraîchit tout (pour mettre à jour le label et sauvegarder)
             if (window.renderAll) window.renderAll();
         };
@@ -536,18 +536,18 @@ export function renderBlessures() {
 
     // Mise à jour du texte de statut
     if (statusLabel) {
-        if (state.blessures >= 6) { 
-            statusLabel.innerText = "DÉCÉDÉ"; 
-            statusLabel.style.color = "#ef4444"; 
-        } else if (state.blessures >= 4) { 
-            statusLabel.innerText = "AGONISANT"; 
-            statusLabel.style.color = "#f97316"; 
-        } else if (state.blessures > 0) { 
-            statusLabel.innerText = "BLESSÉ"; 
-            statusLabel.style.color = "#fbbf24"; 
-        } else { 
-            statusLabel.innerText = "STABLE"; 
-            statusLabel.style.color = "#71717a"; 
+        if (state.blessures >= 6) {
+            statusLabel.innerText = "DÉCÉDÉ";
+            statusLabel.style.color = "#ef4444";
+        } else if (state.blessures >= 4) {
+            statusLabel.innerText = "AGONISANT";
+            statusLabel.style.color = "#f97316";
+        } else if (state.blessures > 0) {
+            statusLabel.innerText = "BLESSÉ";
+            statusLabel.style.color = "#fbbf24";
+        } else {
+            statusLabel.innerText = "STABLE";
+            statusLabel.style.color = "#71717a";
         }
     }
 }
@@ -564,7 +564,7 @@ export function renderInventoryList() {
 
     if (!container || !template || !window.state.inventaire) return;
 
-    container.innerHTML = ''; 
+    container.innerHTML = '';
 
     window.state.inventaire.forEach((it, i) => {
         const clone = template.content.cloneNode(true);
@@ -579,7 +579,7 @@ export function renderInventoryList() {
         clone.querySelector('.item-qty').textContent = it.qty;
 
         // --- ACTIONS ---
-        
+
         // Plus (+)
         clone.querySelector('.btn-plus').onclick = (e) => {
             e.stopPropagation();
@@ -706,7 +706,7 @@ export function renderMountInventory() {
         items.forEach((item, index) => {
             const itemEl = document.createElement('div');
             itemEl.className = "group bg-black/40 border border-zinc-800 hover:border-amber-600/50 p-2 rounded-lg transition-all cursor-pointer relative";
-            
+
             // Au clic, on ouvre la modale en mode édition
             itemEl.onclick = () => window.openModal(type, index);
 
@@ -742,7 +742,7 @@ export function renderMount() {
     document.getElementById('mount-hp').value = mount.hp_cur || 0;
     document.getElementById('mount-speed').value = mount.speed || "18m";
     document.getElementById('mount-fly-speed').value = mount.fly_speed || "0m";
-    
+
     // Stats
     document.getElementById('mount-str').value = mount.str || 10;
     document.getElementById('mount-dex').value = mount.dex || 10;
@@ -840,7 +840,7 @@ export function renderNotes() {
     const state = window.state;
     const selector = document.getElementById('session-selector');
     const textarea = document.getElementById('session-notes');
-    
+
     if (!selector || !textarea) return;
 
     // Sécurité : Initialisation si les notes sont absentes du state
@@ -857,8 +857,8 @@ export function renderNotes() {
     ).join('');
 
     // 2. Charger le contenu de la session active
-    const current = state.notes.sessions.find(s => s.id == state.notes.currentSessionId) 
-                 || state.notes.sessions[0];
+    const current = state.notes.sessions.find(s => s.id == state.notes.currentSessionId)
+        || state.notes.sessions[0];
 
     if (current) {
         textarea.value = current.content;
@@ -878,22 +878,134 @@ export function renderInspiration() {
         // État Actif : Doré et brillant
         btn.classList.replace('border-zinc-800', 'border-amber-500/50');
         btn.classList.add('bg-amber-500/10', 'shadow-[0_0_15px_rgba(245,158,11,0.2)]');
-        
+
         star.classList.add('animate-pulse', 'text-amber-500');
         star.classList.remove('text-zinc-700');
-        
+
         status.innerText = "Actif";
         status.classList.replace('text-zinc-600', 'text-amber-500');
     } else {
         // État Inactif : Sombre
         btn.classList.replace('border-amber-500/50', 'border-zinc-800');
         btn.classList.remove('bg-amber-500/10', 'shadow-[0_0_15px_rgba(245,158,11,0.2)]');
-        
+
         star.classList.remove('animate-pulse', 'text-amber-500');
         star.classList.add('text-zinc-700');
-        
+
         status.innerText = "Inactif";
         status.classList.replace('text-amber-500', 'text-zinc-600');
+    }
+}
+
+export function renderBag() {
+    const inv = window.state.inventory || { type: "CLASSIQUE", pochePrincipale: [], pocheSurvie: [] };
+    const currentType = inv.type || "CLASSIQUE";
+    const config = BAG_TYPES[currentType];
+
+    const imgEl = document.getElementById('bag-visual');
+    if (imgEl) imgEl.src = config.img;
+
+    // --- 1. CALCUL DES SLOTS ---
+    const mainList = inv.pochePrincipale || [];
+    const usedSlots = mainList.reduce((sum, item) => {
+        const t = parseInt(item.taille) || 0;
+        const q = parseInt(item.quantite) || 1;
+        return sum + (t * q);
+    }, 0);
+
+    const infoEl = document.getElementById('bag-info');
+    if (infoEl) infoEl.innerText = `${config.name} • ${usedSlots} / ${config.main} Slots`;
+
+    // --- 2. RENDU POCHE PRINCIPALE ---
+    const mainListEl = document.getElementById('bag-main-list');
+    if (mainListEl) {
+        mainListEl.innerHTML = mainList.length === 0
+            ? '<p class="text-center text-amber-900/30 py-4 italic text-sm">Le sac est vide...</p>'
+            : '';
+
+        mainList.forEach((item, index) => {
+            mainListEl.innerHTML += `
+                <div class="group flex flex-col bg-white/40 p-3 rounded-xl border border-amber-900/5 hover:border-amber-900/20 transition-all cursor-move"
+                     draggable="true"
+                     ondragstart="window.handleDragStart(event, ${index})"
+                     ondragover="window.handleDragOver(event)"
+                     ondragend="window.handleDragEnd(event)"
+                     ondrop="window.handleDrop(event, ${index})">
+                    <div class="flex items-center justify-between pointer-events-none">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl opacity-50">📦</span>
+                            <div>
+                                <div class="font-bold text-amber-950">
+                                    ${item.nom} <span class="text-amber-600 text-sm">x${item.quantite || 1}</span>
+                                </div>
+                                <div class="text-[9px] text-amber-800/60 uppercase font-black tracking-tighter">
+                                    ${item.taille} slots/u • Total: ${(item.taille * (item.quantite || 1))} slots
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="removeItem(${index}, false)" 
+                                class="p-2 text-red-700 hover:bg-red-50 rounded-lg text-xs pointer-events-auto">✕</button>
+                    </div>
+                    ${item.description ? `<div class="mt-2 text-[10px] italic text-amber-900/70 border-l-2 border-amber-900/10 pl-2 pointer-events-none">${item.description}</div>` : ''}
+                </div>`;
+        });
+    }
+
+    // --- 3. RENDU SURVIE (Inchangé dans la logique) ---
+    // ... Garde ton code actuel pour la survie ici ...
+    const survieListEl = document.getElementById('bag-survival-list');
+    if (survieListEl) {
+        survieListEl.innerHTML = '';
+        const survivalItems = inv.pocheSurvie || [];
+        const limits = config.survivalLimits || {};
+
+        const sortedKeys = Object.keys(limits)
+            .filter(key => limits[key] > 0)
+            .sort((a, b) => {
+                const qteA = survivalItems.find(i => i.key === a)?.quantite || 0;
+                const qteB = survivalItems.find(i => i.key === b)?.quantite || 0;
+                if (qteA > 0 && qteB === 0) return -1;
+                if (qteA === 0 && qteB > 0) return 1;
+                return (CATALOGUE_SURVIE[a]?.nom || a).localeCompare(CATALOGUE_SURVIE[b]?.nom || b);
+            });
+
+        sortedKeys.forEach(key => {
+            const max = limits[key];
+            const item = survivalItems.find(i => i.key === key);
+            const qte = item ? (item.quantite || 0) : 0;
+            const template = CATALOGUE_SURVIE[key];
+
+            if (qte > 0) {
+                survieListEl.innerHTML += `
+                <div class="group flex flex-col bg-emerald-500/5 p-3 rounded-xl border border-emerald-900/10 hover:border-emerald-500/30 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl opacity-60">🏕️</span>
+                            <div>
+                                <div class="font-bold text-emerald-950">
+                                    ${item.nom} <span class="text-emerald-600 text-sm ml-1">x${qte}</span>
+                                </div>
+                                <div class="text-[9px] text-emerald-800/60 uppercase font-black tracking-tighter">
+                                    Poche Survie • Max autorisé : ${max}
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="removeSurvivalItem('${key}')" 
+                                class="p-2 text-emerald-800/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all text-xs">✕</button>
+                    </div>
+                    ${item.desc ? `<div class="mt-2 text-[10px] italic text-emerald-900/70 border-l-2 border-emerald-500/20 pl-2">${item.desc}</div>` : ''}
+                </div>`;
+            } else {
+                survieListEl.innerHTML += `
+                <div class="border border-dashed border-emerald-900/10 p-3 rounded-xl flex items-center justify-between opacity-30 grayscale">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl opacity-20">🕳️</span>
+                        <span class="text-[10px] uppercase font-bold text-emerald-900">${template ? template.nom : key}</span>
+                    </div>
+                    <span class="text-[9px] font-black text-emerald-900/40">0 / ${max}</span>
+                </div>`;
+            }
+        });
     }
 }
 
@@ -917,7 +1029,7 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
 
     const grid = document.createElement('div');
     grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3 items-start";
-    
+
     spells.forEach(spell => {
         const uniqueKey = `spell-${spell.originalIndex}`;
         const isOpened = state.openedDescs.includes(uniqueKey);
@@ -953,12 +1065,12 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
             card.classList.remove('border-purple-500');
             const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
             const toIndex = spell.originalIndex;
-            
+
             if (fromIndex !== toIndex && window.reorderSpells) {
                 window.reorderSpells(fromIndex, toIndex);
             }
         };
-        
+
         let borderColor = 'border-zinc-800';
         if (isCantrip) borderColor = 'border-amber-500/30';
         else if (isPrepared) borderColor = 'border-purple-500/30';
@@ -1021,10 +1133,10 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
                     <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Composantes</span>
                     <span class="text-[11px] text-zinc-200 font-medium">
                         ${[
-                            spell.composantes?.v ? 'V' : '',
-                            spell.composantes?.s ? 'S' : '',
-                            spell.composantes?.m ? 'M' : ''
-                        ].filter(Boolean).join(', ') || 'Aucune'}
+                spell.composantes?.v ? 'V' : '',
+                spell.composantes?.s ? 'S' : '',
+                spell.composantes?.m ? 'M' : ''
+            ].filter(Boolean).join(', ') || 'Aucune'}
                     </span>
                 </div>
             </div>
@@ -1054,10 +1166,10 @@ function updateWeightUI() {
     const totalW = calculateTotalWeight();
     const bagSelect = document.getElementById('bag-type');
     const maxW = bagSelect ? parseInt(bagSelect.value) : (window.state.maxWeight || 14);
-    
+
     const bar = document.getElementById('charge-bar');
     const label = document.getElementById('charge-label');
-    
+
     if (!bar || !label) return;
 
     const percent = Math.min(100, (totalW / maxW) * 100);

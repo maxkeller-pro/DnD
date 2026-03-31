@@ -110,6 +110,13 @@
                 <span class="text-lg group-hover:scale-110 transition-transform">🐎</span>
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Fiche Monture</span>
             </button>
+
+            <button onclick="openBagModal()"
+                class="w-full mt-4 flex items-center justify-center gap-3 py-3 border border-zinc-600/30 bg-zinc-600/5 hover:bg-zinc-600/10 rounded-xl transition-all group">
+                <span class="text-lg group-hover:scale-110 transition-transform">🎒</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Sac à
+                    Dos</span>
+            </button>
         </div>
 
         <div class="lg:col-span-3 card p-8 rounded-2xl shadow-2xl border border-gray-800">
@@ -198,7 +205,7 @@
                             <div class="flex items-baseline gap-1">
                                 <input type="number" id="speed" step="0.5"
                                     class="hp-input !text-3xl !w-20 text-center font-black text-emerald-500 bg-transparent border-none"
-                                    onchange="window.updateField('speed', parseFloat(this.value)||0); renderAll();">
+                                    onchange="window.updateField('speed', parseFloat(this.value)||0);">
                                 <span class="text-[10px] font-bold text-zinc-600 uppercase">m</span>
                             </div>
                         </div>
@@ -350,31 +357,6 @@
                     </section>
 
                     <section>
-                        <h3
-                            class="text-emerald-500 font-black uppercase text-[11px] tracking-[0.2em] mb-4 italic border-b border-emerald-900/30 pb-2">
-                            Inventaire</h3>
-                        <div class="bg-black/40 p-4 rounded-xl border border-gray-800 mb-4">
-                            <div class="flex justify-between mb-2 font-black text-[10px]">
-                                <span id="charge-label" class="text-emerald-500">0.0 kg</span>
-                                <select id="bag-type"
-                                    onchange="window.updateField('maxWeight', parseInt(this.value)); renderAll()"
-                                    class="bg-transparent border-none py-0 text-gray-500 uppercase">
-                                    <option value="8">Pochette (8kg)</option>
-                                    <option value="14" selected>Sac (14kg)</option>
-                                    <option value="22">Grand (22kg)</option>
-                                </select>
-                            </div>
-                            <div class="progress-bg">
-                                <div id="charge-bar" class="progress-fill bg-emerald-600"></div>
-                            </div>
-                        </div>
-                        <div id="inventory-list" class="space-y-2 mb-4"></div>
-                        <button onclick="openModal('item')"
-                            class="w-full border border-dashed border-emerald-900/50 p-3 rounded-xl text-[10px] font-black text-emerald-600 hover:bg-emerald-600/5 transition tracking-widest uppercase">+
-                            Ajouter Objet</button>
-                    </section>
-
-                    <section>
                         <div class="card rounded-2xl p-5 space-y-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="text-amber-500 text-lg">📜</span>
@@ -430,33 +412,43 @@
                             Magique</button>
                     </nav>
 
-                    <div id="spell-stats-header" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-zinc-900/40 p-4 rounded-xl border border-white/5 hidden">
-                        <div class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-purple-500/20">
+                    <div id="spell-stats-header"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-zinc-900/40 p-4 rounded-xl border border-white/5 hidden">
+                        <div
+                            class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-purple-500/20">
                             <div>
-                                <span class="block text-[10px] font-bold uppercase text-purple-400 tracking-wider">DD de Sauvegarde</span>
+                                <span class="block text-[10px] font-bold uppercase text-purple-400 tracking-wider">DD de
+                                    Sauvegarde</span>
                                 <div class="flex items-baseline gap-2">
                                     <span id="display-spell-save-dc" class="text-3xl font-black text-white">13</span>
-                                    <span class="text-xs text-zinc-500 italic">Base: 8 + <span id="spell-mod-name">INT</span></span>
+                                    <span class="text-xs text-zinc-500 italic">Base: 8 + <span
+                                            id="spell-mod-name">INT</span></span>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Bonus Objet</span>
-                                <input type="number" onchange="updateSpellMiscBonus(this.value)" id="spell-misc-bonus" 
-                                    class="w-12 bg-zinc-700 text-white text-center rounded border border-white/10 focus:border-purple-500 outline-none" 
+                                <span class="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Bonus
+                                    Objet</span>
+                                <input type="number" onchange="updateSpellMiscBonus(this.value)" id="spell-misc-bonus"
+                                    class="w-12 bg-zinc-700 text-white text-center rounded border border-white/10 focus:border-purple-500 outline-none"
                                     value="0">
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-blue-500/20">
+                        <div
+                            class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-blue-500/20">
                             <div>
-                                <span class="block text-[10px] font-bold uppercase text-blue-400 tracking-wider">Bonus d'Attaque</span>
+                                <span class="block text-[10px] font-bold uppercase text-blue-400 tracking-wider">Bonus
+                                    d'Attaque</span>
                                 <div class="flex items-baseline gap-2">
-                                    <span id="display-spell-attack-bonus" class="text-3xl font-black text-white">+5</span>
+                                    <span id="display-spell-attack-bonus"
+                                        class="text-3xl font-black text-white">+5</span>
                                 </div>
                             </div>
                             <div class="opacity-50 text-blue-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                             </div>
                         </div>
@@ -1037,23 +1029,29 @@
                 </div>
 
                 <div class="lg:col-span-2 space-y-6">
-                    <div class="relative aspect-video rounded-3xl overflow-hidden border border-amber-900/20 shadow-2xl bg-zinc-900 group cursor-pointer">
-    
+                    <div
+                        class="relative aspect-video rounded-3xl overflow-hidden border border-amber-900/20 shadow-2xl bg-zinc-900 group cursor-pointer">
+
                         <img id="mount-img" src="" alt="Monture" class="w-full h-full object-cover opacity-60 hidden">
-                        
-                        <div id="mount-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 bg-zinc-900/50">
+
+                        <div id="mount-placeholder"
+                            class="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 bg-zinc-900/50">
                             <span class="text-6xl mb-2">🐎</span>
-                            <span class="text-xs uppercase font-bold tracking-widest text-zinc-500">Cliquer pour ajouter une image</span>
+                            <span class="text-xs uppercase font-bold tracking-widest text-zinc-500">Cliquer pour ajouter
+                                une image</span>
                         </div>
 
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none"></div>
-                        
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none">
+                        </div>
+
                         <label class="absolute inset-0 z-10 cursor-pointer">
-                            <input type="file" id="mount-file-input" class="hidden" accept="image/*" onchange="window.handleMountImageUpload(this)">
+                            <input type="file" id="mount-file-input" class="hidden" accept="image/*"
+                                onchange="window.handleMountImageUpload(this)">
                         </label>
 
-                        <input type="text" 
-                            onchange="updateMountStat('name', this.value)" id="mount-name" placeholder="Nom de la monture" 
+                        <input type="text" onchange="updateMountStat('name', this.value)" id="mount-name"
+                            placeholder="Nom de la monture"
                             class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-transparent text-center text-3xl font-black text-white uppercase tracking-tighter outline-none border-b border-white/10 focus:border-amber-500">
                     </div>
 
@@ -1061,46 +1059,71 @@
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-amber-900/20 pb-4 mb-4">
                             <div class="text-center">
                                 <span class="block text-[10px] font-bold uppercase text-amber-900">CA</span>
-                                <input type="number" onchange="updateMountStat('ac', this.value)" id="mount-ac" class="w-full bg-transparent text-2xl font-black text-center outline-none" value="11">
+                                <input type="number" onchange="updateMountStat('ac', this.value)" id="mount-ac"
+                                    class="w-full bg-transparent text-2xl font-black text-center outline-none"
+                                    value="11">
                             </div>
                             <div class="text-center">
                                 <span class="block text-[10px] font-bold uppercase text-amber-900">PV Actuels</span>
-                                <input type="number" onchange="updateMountStat('hp_cur', this.value)" id="mount-hp" class="w-full bg-transparent text-2xl font-black text-center outline-none text-red-700" value="19">
+                                <input type="number" onchange="updateMountStat('hp_cur', this.value)" id="mount-hp"
+                                    class="w-full bg-transparent text-2xl font-black text-center outline-none text-red-700"
+                                    value="19">
                             </div>
                             <div class="text-center">
                                 <span class="block text-[10px] font-bold uppercase text-amber-900">Vitesse Sol</span>
-                                <input type="text" onchange="updateMountStat('speed', this.value)" id="mount-speed" class="w-full bg-transparent text-xl font-black text-center outline-none" value="18m">
+                                <input type="text" onchange="updateMountStat('speed', this.value)" id="mount-speed"
+                                    class="w-full bg-transparent text-xl font-black text-center outline-none"
+                                    value="18m">
                             </div>
                             <div class="text-center border-l border-amber-900/10">
-                                <span class="block text-[10px] font-bold uppercase text-amber-900 text-blue-800">Vitesse Vol</span>
-                                <input type="text" onchange="updateMountStat('fly_speed', this.value)" id="mount-fly-speed" class="w-full bg-transparent text-xl font-black text-center outline-none text-blue-900" placeholder="0m">
+                                <span class="block text-[10px] font-bold uppercase text-amber-900 text-blue-800">Vitesse
+                                    Vol</span>
+                                <input type="text" onchange="updateMountStat('fly_speed', this.value)"
+                                    id="mount-fly-speed"
+                                    class="w-full bg-transparent text-xl font-black text-center outline-none text-blue-900"
+                                    placeholder="0m">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-6 gap-2 text-center text-amber-950 mb-6">
                             <div>
                                 <span class="text-[8px] font-black uppercase">For</span>
-                                <input type="number" onchange="updateMountStat('str', this.value)" id="mount-str" class="w-full bg-transparent font-bold text-center outline-none" value="18">
+                                <input type="number" onchange="updateMountStat('str', this.value)" id="mount-str"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="18">
                             </div>
-                            <div><span class="text-[8px] font-black uppercase">Dex</span><input type="number" onchange="updateMountStat('dex', this.value)" id="mount-dex" class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
-                            <div><span class="text-[8px] font-black uppercase">Con</span><input type="number" onchange="updateMountStat('con', this.value)" id="mount-con" class="w-full bg-transparent font-bold text-center outline-none" value="15"></div>
-                            <div><span class="text-[8px] font-black uppercase">Int</span><input type="number" onchange="updateMountStat('int', this.value)" id="mount-int" class="w-full bg-transparent font-bold text-center outline-none" value="2"></div>
-                            <div><span class="text-[8px] font-black uppercase">Sag</span><input type="number" onchange="updateMountStat('wis', this.value)" id="mount-wis" class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
-                            <div><span class="text-[8px] font-black uppercase">Cha</span><input type="number" onchange="updateMountStat('cha', this.value)" id="mount-cha" class="w-full bg-transparent font-bold text-center outline-none" value="7"></div>
+                            <div><span class="text-[8px] font-black uppercase">Dex</span><input type="number"
+                                    onchange="updateMountStat('dex', this.value)" id="mount-dex"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
+                            <div><span class="text-[8px] font-black uppercase">Con</span><input type="number"
+                                    onchange="updateMountStat('con', this.value)" id="mount-con"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="15"></div>
+                            <div><span class="text-[8px] font-black uppercase">Int</span><input type="number"
+                                    onchange="updateMountStat('int', this.value)" id="mount-int"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="2"></div>
+                            <div><span class="text-[8px] font-black uppercase">Sag</span><input type="number"
+                                    onchange="updateMountStat('wis', this.value)" id="mount-wis"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
+                            <div><span class="text-[8px] font-black uppercase">Cha</span><input type="number"
+                                    onchange="updateMountStat('cha', this.value)" id="mount-cha"
+                                    class="w-full bg-transparent font-bold text-center outline-none" value="7"></div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-amber-900/20 pt-4">
                             <div>
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Attaques / Actions</h4>
-                                    <button onclick="openModal('mount-attack', -1)" class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
+                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Attaques /
+                                        Actions</h4>
+                                    <button onclick="openModal('mount-attack', -1)"
+                                        class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
                                 </div>
                                 <div id="mount-actions-list" class="space-y-2"></div>
                             </div>
                             <div>
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Capacités Spéciales</h4>
-                                    <button onclick="openModal('mount-skill', -1)" class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
+                                    <h4 class="text-[10px] font-black uppercase text-amber-900 italic">Capacités
+                                        Spéciales</h4>
+                                    <button onclick="openModal('mount-skill', -1)"
+                                        class="text-xs bg-amber-800 text-white px-2 rounded hover:bg-amber-700">+</button>
                                 </div>
                                 <div id="mount-skills-list" class="space-y-2"></div>
                             </div>
@@ -1121,6 +1144,132 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="bag-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4">
+        <div
+            class="bg-[#eaddca] w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl border-4 border-amber-900/20 flex flex-col">
+
+            <div class="p-6 border-b border-amber-900/10 flex justify-between items-center bg-amber-900/5">
+                <div>
+                    <h2 class="text-2xl font-black text-amber-950 uppercase tracking-tighter">Inventaire</h2>
+                    <p id="bag-info" class="text-[10px] font-bold text-amber-800/60 uppercase tracking-widest">Sac
+                        Classique • 0 / 14 Slots</p>
+                </div>
+                <button onclick="closeBagModal()"
+                    class="text-amber-900 hover:rotate-90 transition-transform p-2 text-2xl">✕</button>
+            </div>
+
+            <div class="flex flex-col items-center py-4 border-b border-amber-900/5 bg-amber-900/5">
+                <img id="bag-visual" src="/images/sac-standard.png" alt="Illustration Sac"
+                    class="h-32 w-auto object-contain drop-shadow-xl mb-2">
+
+                <select onchange="updateBagType(this.value)" id="bag-type-selector"
+                    class="bg-transparent text-[10px] font-black uppercase text-amber-900/40 border-none outline-none cursor-pointer hover:text-amber-900">
+                    <option value="SACOCHE">Sacoche</option>
+                    <option value="CLASSIQUE">Sac à dos standard</option>
+                    <option value="GRAND">Grand Sac à dos</option>
+                </select>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 lg:p-6">
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+
+                    <section
+                        class="flex flex-col space-y-4 border-b lg:border-b-0 lg:border-r border-amber-900/10 pb-6 lg:pb-0 lg:pr-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-[10px] font-black uppercase text-amber-900 italic tracking-widest">Poche
+                                Principale</h3>
+                            <button onclick="promptAddItem()"
+                                class="text-[9px] bg-amber-800 text-white px-2 py-1 rounded hover:bg-amber-700 transition-colors uppercase font-bold">
+                                + Trouver
+                            </button>
+                        </div>
+
+                        <div id="bag-main-list" class="space-y-3 overflow-y-auto pr-1" style="max-height: 400px;">
+                        </div>
+                    </section>
+
+                    <section class="flex flex-col space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-[10px] font-black uppercase text-emerald-900 italic tracking-widest">
+                                Matériel de
+                                Survie</h3>
+                            <button onclick="showSurvivalCatalogue()"
+                                class="text-[9px] bg-emerald-800 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors uppercase font-bold">
+                                + Matériel
+                            </button>
+                        </div>
+
+                        <div id="bag-survival-list" class="grid grid-cols-1 gap-2 overflow-y-auto pr-1"
+                            style="max-height: 400px;">
+                        </div>
+
+                        <div class="mt-auto p-3 bg-emerald-900/5 border border-emerald-900/10 rounded-lg">
+                            <p class="text-[9px] text-emerald-900/60 leading-tight italic">
+                                Note : Les objets de survie ne pèsent rien mais sont limités en nombre d'emplacements.
+                            </p>
+                        </div>
+                    </section>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="add-item-modal"
+        class="fixed inset-0 z-[110] flex items-center justify-center hidden bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-zinc-900 border border-amber-600/30 w-full max-w-md p-6 rounded-2xl shadow-2xl">
+            <h3 class="text-amber-500 font-black uppercase tracking-widest mb-4">Nouvel Objet</h3>
+
+            <div class="space-y-4">
+                <input type="text" id="new-item-name" placeholder="Nom de l'objet"
+                    class="w-full bg-zinc-800 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-amber-500">
+
+                <textarea id="new-item-desc" placeholder="Description..."
+                    class="w-full bg-zinc-800 border border-white/10 rounded-lg p-2 text-white h-20 outline-none focus:border-amber-500"></textarea>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] text-zinc-500 uppercase font-bold mb-1">Taille (Slots)</label>
+                        <select id="new-item-size"
+                            class="w-full bg-zinc-800 border border-white/10 rounded-lg p-2 text-white">
+                            <option value="0">Mini (0)</option>
+                            <option value="1" selected>Petit (1)</option>
+                            <option value="2">Moyen (2)</option>
+                            <option value="4">Grand (4)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-zinc-500 uppercase font-bold mb-1">Quantité</label>
+                        <input type="number" id="new-item-qty" value="1" min="1"
+                            class="w-full bg-zinc-800 border border-white/10 rounded-lg p-2 text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeAddItemModal()"
+                    class="flex-1 py-2 text-zinc-400 font-bold uppercase text-xs">Annuler</button>
+                <button onclick="confirmAddItem()"
+                    class="flex-1 py-2 bg-amber-600 text-white rounded-lg font-bold uppercase text-xs hover:bg-amber-500">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="survival-catalogue-modal" class="fixed inset-0 z-[120] flex items-center justify-center hidden bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-zinc-900 border border-emerald-500/30 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
+            <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                <h3 class="text-emerald-500 font-black uppercase tracking-widest text-sm italic">Catalogue de Survie</h3>
+                <button onclick="closeSurvivalCatalogue()" class="text-white/50 hover:text-white">✕</button>
+            </div>
+            
+            <div id="survival-items-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                </div>
         </div>
     </div>
 
