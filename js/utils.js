@@ -107,7 +107,6 @@ export const BAG_TYPES = {
             RATION: 4,
             PEAU: 1,
             COUVERTURE: 1
-            // Les autres objets non listés seront à 0
         }
     },
     CLASSIQUE: { 
@@ -142,4 +141,32 @@ export const BAG_TYPES = {
             BUCHE: 2
         }
     }
+};
+
+// Déduit le montant du porte-monnaie (en partant des petites pièces vers les grandes)
+export const subtractMoney = (money, costInPO) => {
+    let totalPC = getTotalFortuneInPC(money);
+    let costInPC = costInPO * 100;
+
+    if (totalPC < costInPC) return false;
+
+    totalPC -= costInPC;
+    
+    // On redistribue dans les compartiments
+    money.pp = Math.floor(totalPC / 1000);
+    totalPC %= 1000;
+    money.po = Math.floor(totalPC / 100);
+    totalPC %= 100;
+    money.pa = Math.floor(totalPC / 10);
+    money.pc = totalPC % 10;
+    
+    return true;
+};
+
+// Convertit le porte-monnaie du joueur en Pièces de Cuivre (unité de base)
+const getTotalFortuneInPC = (money) => {
+    return (parseInt(money.pp) || 0) * 1000 +
+           (parseInt(money.po) || 0) * 100 +
+           (parseInt(money.pa) || 0) * 10 +
+           (parseInt(money.pc) || 0);
 };

@@ -3,7 +3,7 @@ import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
 import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab } from './js/ui-modals.js';
-import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE } from './js/utils.js';
+import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney } from './js/utils.js';
 
 /**
     /js
@@ -182,83 +182,147 @@ window.showSurvivalCatalogue = function() {
     const grid = document.getElementById('survival-items-grid');
     const inv = window.state.inventory;
     const currentType = inv.type || "CLASSIQUE";
-    const limits = BAG_TYPES[currentType].survivalLimits || {};
+    const config = BAG_TYPES[currentType];
+    const limits = config.survivalLimits || {};
     
     grid.innerHTML = '';
 
-    Object.keys(CATALOGUE_SURVIE).forEach(key => {
-        const itemTemplate = CATALOGUE_SURVIE[key];
-        const max = limits[key] || 0;
+    // 1. On transforme le catalogue en tableau de clés pour pouvoir trier
+    const sortedKeys = Object.keys(CATALOGUE_SURVIE).sort((a, b) => {
+        const itemA = CATALOGUE_SURVIE[a];
+        const itemB = CATALOGUE_SURVIE[b];
         
-        if (max > 0) {
-            // --- LA CORRECTION EST ICI ---
-            // On cherche l'objet et on récupère sa propriété .quantite au lieu du .length du tableau
-            const itemPossede = inv.pocheSurvie.find(i => i.key === key);
-            const actuel = itemPossede ? itemPossede.quantite : 0;
-            // ------------------------------
+        // Calcul des places en survie pour A et B
+        const maxA = limits[a] || 0;
+        const qteA = (inv.pocheSurvie.find(i => i.key === a))?.quantite || 0;
+        const hasSpaceA = maxA > 0 && qteA < maxA;
 
-            const isFull = actuel >= max;
+        const maxB = limits[b] || 0;
+        const qteB = (inv.pocheSurvie.find(i => i.key === b))?.quantite || 0;
+        const hasSpaceB = maxB > 0 && qteB < maxB;
 
-            grid.innerHTML += `
-                <button onclick="addSurvivalItem('${key}')" ${isFull ? 'disabled' : ''}
-                        class="flex flex-col text-left p-3 rounded-xl border transition-all 
-                        ${isFull ? 'opacity-50 bg-zinc-800 border-white/5 cursor-not-allowed' : 'bg-white/5 border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/50'}">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="font-bold ${isFull ? 'text-zinc-500' : 'text-emerald-400'}">${itemTemplate.nom}</span>
-                        <span class="text-[10px] font-black ${actuel >= max ? 'text-red-500' : 'text-emerald-500/50'}">
-                            ${actuel} / ${max}
-                        </span>
-                    </div>
-                    <p class="text-[9px] text-white/40 italic">${itemTemplate.desc}</p>
-                </button>
-            `;
+        // --- LOGIQUE DU TRI ---
+        // Priorité 1 : Ceux qui ont encore de la place dans la poche survie
+        if (hasSpaceA && !hasSpaceB) return -1;
+        if (!hasSpaceA && hasSpaceB) return 1;
+
+        // Priorité 2 : Si les deux sont dans le même état, tri alphabétique par nom
+        return itemA.nom.localeCompare(itemB.nom);
+    });
+
+    // 2. On boucle sur les clés triées
+    sortedKeys.forEach(key => {
+        const itemTemplate = CATALOGUE_SURVIE[key];
+        const maxSurvie = limits[key] || 0;
+        
+        const itemInSurvie = inv.pocheSurvie.find(i => i.key === key);
+        const qteSurvie = itemInSurvie ? itemInSurvie.quantite : 0;
+        const isSurvieFull = qteSurvie >= maxSurvie;
+
+        const usedSlots = inv.pochePrincipale.reduce((sum, i) => sum + (i.taille * (i.quantite || 1)), 0);
+        const canFitInMain = (usedSlots + itemTemplate.taille) <= config.main;
+        const canBuy = !isSurvieFull || (isSurvieFull && canFitInMain);
+
+        let statusText = `${qteSurvie} / ${maxSurvie}`;
+        let statusColor = "text-emerald-500/50";
+        let cardStyle = "bg-white/5 border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/50";
+
+        // Ajustement visuel si la survie est pleine ou le sac est plein
+        if (maxSurvie === 0 || isSurvieFull) {
+            if (canFitInMain) {
+                statusText = maxSurvie === 0 ? "Sac Principal" : "Vers Sac Principal";
+                statusColor = "text-amber-500";
+                cardStyle = "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 hover:border-amber-500/50";
+            } else {
+                statusText = "Sac Plein";
+                statusColor = "text-red-500";
+                cardStyle = "opacity-50 bg-zinc-800 border-white/5 cursor-not-allowed";
+            }
         }
+
+        grid.innerHTML += `
+            <button onclick="addSurvivalItem('${key}')" ${!canBuy ? 'disabled' : ''}
+                    class="flex flex-col text-left p-3 rounded-xl border transition-all ${cardStyle} group">
+                <div class="flex justify-between items-center w-full mb-1">
+                    <span class="font-bold ${!canBuy ? 'text-zinc-500' : 'text-white'} group-hover:text-emerald-400 transition-colors">
+                        ${itemTemplate.nom}
+                    </span>
+                    <span class="text-[10px] font-black ${statusColor}">
+                        ${statusText}
+                    </span>
+                </div>
+                <p class="text-[9px] text-white/40 italic leading-tight mb-2">${itemTemplate.desc}</p>
+                <div class="flex justify-between items-center mt-auto pt-2 border-t border-white/5">
+                    <span class="text-[10px] font-bold text-amber-500/80">${itemTemplate.valeur} PO</span>
+                    <span class="text-[8px] uppercase tracking-widest text-white/20">${itemTemplate.taille} Slots</span>
+                </div>
+            </button>
+        `;
     });
 
     document.getElementById('survival-catalogue-modal').classList.remove('hidden');
 };
+
 window.closeSurvivalCatalogue = function() {
     document.getElementById('survival-catalogue-modal').classList.add('hidden');
 };
 
 window.addSurvivalItem = function(key) {
-    // On s'assure de récupérer le state le plus frais
     const inv = window.state.inventory;
+    const stats = window.state.stats; // Supposons que l'argent est dans state.money ou state.stats.money
+    const itemTemplate = CATALOGUE_SURVIE[key];
     const currentType = inv.type || "CLASSIQUE";
-    const limits = BAG_TYPES[currentType].survivalLimits || {};
-    const maxAutorise = limits[key] || 0;
-
-    // 1. On cherche l'index pour être sûr de manipuler le tableau directement
-    const itemIndex = inv.pocheSurvie.findIndex(item => item.key === key);
-    const actuel = itemIndex !== -1 ? inv.pocheSurvie[itemIndex].quantite : 0;
-
-    // 2. Vérification de la limite
-    if (actuel >= maxAutorise) {
-        alert(`Limite atteinte pour : ${CATALOGUE_SURVIE[key].nom}`);
+    const config = BAG_TYPES[currentType];
+    
+    // 1. Vérification de l'argent
+    if (!subtractMoney(window.state.money, itemTemplate.valeur)) {
+        alert("Pas assez d'argent !");
         return;
     }
 
-    // 3. Logique d'ajout ou d'incrémentation
-    if (itemIndex !== -1) {
-        // On incrémente directement dans le tableau
-        inv.pocheSurvie[itemIndex].quantite += 1;
-    } else {
-        // On ajoute le nouvel objet avec sa clé
-        inv.pocheSurvie.push({
-            ...CATALOGUE_SURVIE[key],
-            key: key,
-            quantite: 1
-        });
+    // 2. Tentative d'ajout dans la POCHE SURVIE
+    const limits = config.survivalLimits || {};
+    const maxSurvie = limits[key] || 0;
+    const itemSurvie = inv.pocheSurvie.find(i => i.key === key);
+    const qteSurvie = itemSurvie ? itemSurvie.quantite : 0;
+
+    if (maxSurvie > 0 && qteSurvie < maxSurvie) {
+        if (itemSurvie) {
+            itemSurvie.quantite += 1;
+        } else {
+            inv.pocheSurvie.push({ ...itemTemplate, key: key, quantite: 1 });
+        }
+    } 
+    // 3. Sinon, tentative d'ajout dans la POCHE PRINCIPALE
+    else {
+        // Calcul de la place restante dans le sac
+        const usedSlots = inv.pochePrincipale.reduce((sum, i) => sum + (i.taille * (i.quantite || 1)), 0);
+        const slotsNecessaires = itemTemplate.taille;
+
+        if (usedSlots + slotsNecessaires <= config.main) {
+            // On cherche si l'objet existe déjà en principal pour le stacker
+            const itemPrincipal = inv.pochePrincipale.find(i => i.nom === itemTemplate.nom);
+            if (itemPrincipal) {
+                itemPrincipal.quantite = (itemPrincipal.quantite || 1) + 1;
+            } else {
+                inv.pochePrincipale.push({ 
+                    nom: itemTemplate.nom, 
+                    taille: itemTemplate.taille, 
+                    quantite: 1, 
+                    description: itemTemplate.desc 
+                });
+            }
+            alert(`Poche survie pleine ! Ajouté au sac principal. (-${itemTemplate.valeur} PO)`);
+        } else {
+            alert("Plus aucune place, même dans le sac principal !");
+            return;
+        }
     }
 
-    // 4. Mises à jour CRITIQUES
-    // On appelle d'abord renderBag pour mettre à jour l'inventaire en fond
+    // 4. Mises à jour globales
     renderBag();
-    
-    // On force le rafraîchissement du catalogue pour recalculer les "actuel / max"
+    if (window.renderStats) window.renderStats(); // Pour l'argent
     showSurvivalCatalogue(); 
-
-    // Enfin on sauvegarde
     saveToSupabase();
 };
 
@@ -280,6 +344,45 @@ window.removeSurvivalItem = function(key) {
         }
         saveToSupabase();
     }
+};
+
+let draggedItemIndex = null;
+
+window.handleDragStart = function(e, index) {
+    draggedItemIndex = index;
+    e.dataTransfer.effectAllowed = "move";
+    // On ajoute un petit délai pour que l'ombre portée (ghost image) soit visible 
+    // avant que l'élément d'origine ne devienne transparent
+    setTimeout(() => {
+        e.target.classList.add('opacity-20');
+    }, 0);
+};
+
+window.handleDragOver = function(e) {
+    e.preventDefault(); // CRUCIAL : permet d'autoriser le drop
+    e.dataTransfer.dropEffect = "move";
+};
+
+window.handleDragEnd = function(e) {
+    e.target.classList.remove('opacity-20');
+};
+
+window.handleDrop = function(e, targetIndex) {
+    e.preventDefault();
+    const inv = window.state.inventory;
+    
+    if (draggedItemIndex !== null && draggedItemIndex !== targetIndex) {
+        const list = inv.pochePrincipale;
+        
+        // On déplace l'élément dans le tableau
+        const [movedItem] = list.splice(draggedItemIndex, 1);
+        list.splice(targetIndex, 0, movedItem);
+
+        // Sauvegarde et rendu
+        renderBag();
+        if (typeof saveToSupabase === "function") saveToSupabase();
+    }
+    draggedItemIndex = null;
 };
 
 // --- INITIALISATION ---
@@ -1083,5 +1186,6 @@ window.renderMountActions = renderMountActions;
 window.renderMount = renderMount;
 window.switchTab = switchTab;
 window.renderBag = renderBag;
+window.subtractMoney = subtractMoney;
 window.BAG_TYPES = BAG_TYPES;
 window.SKILLS_LIST = SKILLS_LIST;
