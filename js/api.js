@@ -71,6 +71,16 @@ export async function loadUserData(user) {
     }
 }
 
+window.getInventorySaveBonus = function() {
+    const inv = window.state.inventory.pochePrincipale || [];
+    // On additionne les bonus de tous les objets qui possèdent la propriété bonusSauvegarde
+    return inv.reduce((total, item) => {
+        const bonus = parseInt(item.bonusSauvegarde) || 0;
+        const qte = parseInt(item.quantite) || 1;
+        return total + (bonus * qte);
+    }, 0);
+};
+
 export async function deleteCharacter(charId, charName) {
     const confirmDelete = confirm(`Es-tu sûr de vouloir envoyer ${charName} au Valhalla définitivement ?`);
 

@@ -385,6 +385,98 @@ window.handleDrop = function(e, targetIndex) {
     draggedItemIndex = null;
 };
 
+// --- GESTION DES QUANTITÉS ---
+window.updateItemQuantity = function(index, delta) {
+    const list = window.state.inventory.pochePrincipale;
+    const item = list[index];
+    
+    const newQty = (parseInt(item.quantite) || 1) + delta;
+    
+    if (newQty <= 0) {
+        // Si la quantité tombe à 0, on demande confirmation pour supprimer
+        if (confirm(`Supprimer ${item.nom} de l'inventaire ?`)) {
+            removeItem(index, false);
+        }
+    } else {
+        item.quantite = newQty;
+        renderBag();
+        saveToSupabase();
+    }
+};
+
+window.saveItemEdits = function(index) {
+    const nameInput = document.getElementById(`edit-name-${index}`);
+    const descInput = document.getElementById(`edit-desc-${index}`);
+    const bonusInput = document.getElementById(`edit-bonus-save-${index}`);
+    
+    // On récupère l'objet dans le state
+    const item = window.state.inventory.pochePrincipale[index];
+
+    if (item && nameInput && descInput) {
+        // Mise à jour des valeurs textuelles
+        item.nom = nameInput.value;
+        item.description = descInput.value;
+        
+        // Mise à jour du bonus (on vérifie s'il existe dans le DOM)
+        if (bonusInput) {
+            item.bonusSauvegarde = parseInt(bonusInput.value) || 0;
+        }
+
+        renderBag(); 
+        
+        if (typeof renderSavesList === "function") {
+            renderSavesList();
+        }
+
+        if (typeof saveToSupabase === "function") {
+            saveToSupabase();
+        }
+    }
+};
+
+window.toggleEditMode = function(index) {
+    const card = document.getElementById(`item-card-${index}`);
+    const editForm = document.getElementById(`edit-form-${index}`);
+    const viewContent = document.getElementById(`view-content-${index}`);
+    
+    if (editForm.classList.contains('hidden')) {
+        // Entrée en mode édition
+        editForm.classList.remove('hidden');
+        viewContent.classList.add('hidden');
+        
+        // CRUCIAL : Désactive le drag pour permettre la sélection de texte
+        card.setAttribute('draggable', 'false');
+        card.classList.remove('cursor-move');
+        
+        // Optionnel : Focus automatique sur le nom
+        setTimeout(() => document.getElementById(`edit-name-${index}`).focus(), 50);
+    } else {
+        // Sortie / Annulation
+        renderBag(); 
+    }
+};
+
+// --- ÉDITION D'UN OBJET ---
+window.editMainItem = function(index) {
+    const item = window.state.inventory.pochePrincipale[index];
+    
+    const newNom = prompt("Nom de l'objet :", item.nom);
+    if (newNom === null) return; // Annulation
+
+    const newTaille = prompt("Taille (slots) :", item.taille);
+    const newDesc = prompt("Description :", item.description || "");
+
+    window.state.inventory.pochePrincipale[index] = {
+        ...item,
+        nom: newNom || item.nom,
+        taille: parseInt(newTaille) || 0,
+        description: newDesc
+    };
+
+    renderBag();
+    saveToSupabase();
+};
+
 // --- INITIALISATION ---
 // On utilise 'DOMContentLoaded' pour être sûr que l'ID 'auth-overlay' existe dans le DOM
 document.addEventListener('DOMContentLoaded', () => {

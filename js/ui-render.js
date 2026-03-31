@@ -126,26 +126,31 @@ export function renderSavesList() {
     if (!container || !state) return;
 
     const p = getProf();
+    // On calcule le bonus d'équipement une seule fois pour toute la liste
+    const equipBonus = window.getInventorySaveBonus ? window.getInventorySaveBonus() : 0;
+    
     const statsOrder = ["Force", "Dextérité", "Constitution", "Intelligence", "Sagesse", "Charisme"];
 
     container.innerHTML = statsOrder.map(s => {
-        // On vérifie si la sauvegarde est maîtrisée (présente dans le tableau m_saves)
         const isChecked = state.m_saves && state.m_saves.includes(s);
 
-        // Calcul du modificateur : Mod de Stat + (Bonus de Maîtrise si coché)
         const baseMod = getMod(state.stats[s] || 10);
-        const totalMod = baseMod + (isChecked ? p : 0);
+        // Calcul final : Stat + Maîtrise + Équipement
+        const totalMod = baseMod + (isChecked ? p : 0) + equipBonus;
 
         return `
-            <div class="stat-row-layout hover:bg-white/5 transition-colors">
+            <div class="stat-row-layout hover:bg-white/5 transition-colors group">
                 <input type="checkbox" 
-                       class="custom-checkbox" 
-                       ${isChecked ? 'checked' : ''} 
-                       onchange="window.toggleSave('${s}')">
+                        class="custom-checkbox" 
+                        ${isChecked ? 'checked' : ''} 
+                        onchange="window.toggleSave('${s}')">
                 
-                <span class="text-[11px] font-bold uppercase tracking-tight text-zinc-400">${s}</span>
+                <div class="flex items-center gap-1">
+                    <span class="text-[11px] font-bold uppercase tracking-tight text-zinc-400">${s}</span>
+                    ${equipBonus > 0 ? `<span class="text-[9px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Bonus d'équipement: +${equipBonus}">🛡️</span>` : ''}
+                </div>
                 
-                <span class="text-right font-black text-amber-500 text-xs">
+                <span class="text-right font-black ${equipBonus > 0 ? 'text-blue-400' : 'text-amber-500'} text-xs">
                     ${(totalMod >= 0 ? '+' : '') + totalMod}
                 </span>
             </div>`;
@@ -925,28 +930,65 @@ export function renderBag() {
 
         mainList.forEach((item, index) => {
             mainListEl.innerHTML += `
-                <div class="group flex flex-col bg-white/40 p-3 rounded-xl border border-amber-900/5 hover:border-amber-900/20 transition-all cursor-move"
-                     draggable="true"
-                     ondragstart="window.handleDragStart(event, ${index})"
-                     ondragover="window.handleDragOver(event)"
-                     ondragend="window.handleDragEnd(event)"
-                     ondrop="window.handleDrop(event, ${index})">
-                    <div class="flex items-center justify-between pointer-events-none">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xl opacity-50">📦</span>
-                            <div>
-                                <div class="font-bold text-amber-950">
-                                    ${item.nom} <span class="text-amber-600 text-sm">x${item.quantite || 1}</span>
-                                </div>
-                                <div class="text-[9px] text-amber-800/60 uppercase font-black tracking-tighter">
-                                    ${item.taille} slots/u • Total: ${(item.taille * (item.quantite || 1))} slots
+                <div id="item-card-${index}" 
+                    class="group flex flex-col bg-white/40 p-3 rounded-xl border border-amber-900/5 hover:border-amber-900/20 transition-all cursor-move"
+                    draggable="true"
+                    ondragstart="window.handleDragStart(event, ${index})"
+                    ondragover="window.handleDragOver(event)"
+                    ondrop="window.handleDrop(event, ${index})">
+                    
+                    <div id="view-content-${index}" class="block"> 
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xl opacity-50 pointer-events-none">📦</span>
+                                <div class="pointer-events-none">
+                                    <div class="font-bold text-amber-950 flex items-center gap-2">
+                                        ${item.nom}
+                                        <div class="flex items-center bg-amber-900/10 rounded-lg px-1 pointer-events-auto">
+                                            <button onclick="updateItemQuantity(${index}, -1)" class="px-1 hover:text-red-600">-</button>
+                                            <span class="text-xs min-w-[20px] text-center">${item.quantite || 1}</span>
+                                            <button onclick="updateItemQuantity(${index}, 1)" class="px-1 hover:text-emerald-600">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[9px] text-amber-800/60 uppercase font-black tracking-tighter">
+                                        <span>${item.taille} slots/u</span>
+                                        ${item.bonusSauvegarde > 0 ? `
+                                            <span class="bg-blue-100 text-blue-700 px-1 rounded flex items-center gap-0.5">
+                                                🛡️ +${item.bonusSauvegarde} Sauvegardes
+                                            </span>
+                                        ` : ''}
+                                    </div>
                                 </div>
                             </div>
+                            <div class="flex gap-1 pointer-events-auto">
+                                <button onclick="toggleEditMode(${index})" class="p-2 text-amber-900/40 hover:text-amber-600">✏️</button>
+                                <button onclick="removeItem(${index}, false)" class="p-2 text-red-700/40 hover:text-red-700">✕</button>
+                            </div>
                         </div>
-                        <button onclick="removeItem(${index}, false)" 
-                                class="p-2 text-red-700 hover:bg-red-50 rounded-lg text-xs pointer-events-auto">✕</button>
+                        ${item.description ? `<div class="mt-2 text-[10px] italic text-amber-900/70 border-l-2 border-amber-900/10 pl-2 pointer-events-none">${item.description}</div>` : ''}
                     </div>
-                    ${item.description ? `<div class="mt-2 text-[10px] italic text-amber-900/70 border-l-2 border-amber-900/10 pl-2 pointer-events-none">${item.description}</div>` : ''}
+
+                    <div id="edit-form-${index}" class="hidden flex flex-col gap-2 pointer-events-auto">
+                        <input type="text" id="edit-name-${index}" value="${item.nom.replace(/"/g, '&quot;')}" 
+                            onmousedown="event.stopPropagation()"
+                            class="bg-white border border-amber-900/20 rounded p-2 text-sm font-bold text-amber-950 w-full focus:ring-2 focus:ring-amber-500 outline-none">
+                        
+                        <div class="flex items-center gap-2 bg-white/50 p-2 rounded border border-amber-900/10">
+                            <label class="text-[10px] font-bold text-amber-900/50 uppercase">Bonus Sauvegarde :</label>
+                            <input type="number" id="edit-bonus-save-${index}" value="${item.bonusSauvegarde || 0}" 
+                                onmousedown="event.stopPropagation()"
+                                class="bg-white border border-amber-900/20 rounded p-1 text-xs w-16 focus:ring-2 focus:ring-amber-500 outline-none text-center">
+                        </div>
+
+                        <textarea id="edit-desc-${index}" rows="3" 
+                                onmousedown="event.stopPropagation()"
+                                class="bg-white border border-amber-900/20 rounded p-2 text-[10px] italic text-amber-900/80 w-full focus:ring-2 focus:ring-amber-500 outline-none">${item.description || ''}</textarea>
+                        
+                        <div class="flex justify-end gap-2 mt-1">
+                            <button onclick="renderBag()" class="px-3 py-1 text-[10px] uppercase font-bold text-zinc-500 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors">Annuler</button>
+                            <button onclick="saveItemEdits(${index})" class="px-3 py-1 text-[10px] uppercase font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">Enregistrer</button>
+                        </div>
+                    </div>
                 </div>`;
         });
     }
