@@ -1,4 +1,4 @@
-export const APP_VERSION = "3.0.0";
+export const APP_VERSION = "3.0.1";
 
 export function getInitialState() {
     return {
@@ -19,9 +19,7 @@ export function getInitialState() {
             sessions: [{ id: Date.now(), title: "Session Initiale", content: "" }]
         },
         inventory: {
-            type: 'Sac Classique',
-            capacityMax: 14,
-            survivalMax: 2,
+            type: 'CLASSIQUE',
             pochePrincipale: [],
             pocheSurvie: []
         },
