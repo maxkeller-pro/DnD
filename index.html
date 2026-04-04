@@ -655,6 +655,17 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="col-span-2 space-y-2 mt-2">
+                            <label class="text-[9px] uppercase font-black text-blue-400">Propriétés Spéciales</label>
+                            <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="m-spell-concentration" class="w-4 h-4 accent-blue-500">
+                                    <span class="text-xs font-bold text-zinc-400 group-hover:text-white transition">
+                                        Concentration <span class="text-[10px] text-blue-400/60 ml-1">(Nécessite un maintien)</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     <div id="m-atk-fields" class="hidden space-y-4">
                         <div class="grid grid-cols-2 gap-4">
@@ -1056,56 +1067,97 @@
                     </div>
 
                     <div class="bg-[#f2e5d5] p-6 rounded-sm shadow-xl text-zinc-900 border-t-4 border-amber-800">
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-amber-900/20 pb-4 mb-4">
-                            <div class="text-center">
-                                <span class="block text-[10px] font-bold uppercase text-amber-900">CA</span>
+                        <div class="grid grid-cols-2 gap-4 border-b border-amber-900/10 pb-4 mb-4">
+                            <div class="text-center p-3 bg-amber-900/5 rounded-xl border border-amber-900/10">
+                                <span class="block text-[10px] font-black uppercase text-amber-900/60 mb-1">CA</span>
                                 <input type="number" onchange="updateMountStat('ac', this.value)" id="mount-ac"
-                                    class="w-full bg-transparent text-2xl font-black text-center outline-none"
+                                    class="w-full bg-transparent text-2xl font-black text-center outline-none text-amber-950"
                                     value="11">
                             </div>
-                            <div class="text-center">
-                                <span class="block text-[10px] font-bold uppercase text-amber-900">PV Actuels</span>
-                                <input type="number" onchange="updateMountStat('hp_cur', this.value)" id="mount-hp"
-                                    class="w-full bg-transparent text-2xl font-black text-center outline-none text-red-700"
-                                    value="19">
+
+                            <div class="flex flex-col items-center p-3 bg-amber-900/5 rounded-xl border border-amber-900/10">
+                                <span class="block text-[10px] font-black uppercase text-amber-900/60 mb-1">Points de Vie</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="mount-hp-cur" onchange="updateMountStat('hp', this.value)" 
+                                        class="w-12 bg-transparent text-2xl font-black text-center outline-none text-red-700"
+                                        value="19">
+                                    <span class="text-amber-900/30 text-xl font-light">/</span>
+                                    <input type="number" id="mount-hp-max" onchange="updateMountStat('hpMax', this.value)" 
+                                        class="w-12 bg-transparent text-lg font-bold text-center outline-none text-amber-900/40"
+                                        value="19">
+                                </div>
                             </div>
-                            <div class="text-center">
-                                <span class="block text-[10px] font-bold uppercase text-amber-900">Vitesse Sol</span>
-                                <input type="text" onchange="updateMountStat('speed', this.value)" id="mount-speed"
-                                    class="w-full bg-transparent text-xl font-black text-center outline-none"
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 mb-6">
+                            <div class="text-center p-2 bg-zinc-100/50 rounded-lg border border-amber-900/5">
+                                <span class="block text-[8px] font-black uppercase text-amber-900/50">Sol</span>
+                                <input type="text" onchange="updateMountSpeed('sol', this.value)" id="mount-speed-sol"
+                                    class="w-full bg-transparent text-[13px] font-black text-center outline-none text-amber-950"
                                     value="18m">
                             </div>
-                            <div class="text-center border-l border-amber-900/10">
-                                <span class="block text-[10px] font-bold uppercase text-amber-900 text-blue-800">Vitesse
-                                    Vol</span>
-                                <input type="text" onchange="updateMountStat('fly_speed', this.value)"
-                                    id="mount-fly-speed"
-                                    class="w-full bg-transparent text-xl font-black text-center outline-none text-blue-900"
+                            <div class="text-center p-2 bg-blue-50/50 rounded-lg border border-blue-900/5">
+                                <span class="block text-[8px] font-black uppercase text-blue-800/50">Vol</span>
+                                <input type="text" onchange="updateMountSpeed('vol', this.value)" id="mount-speed-vol"
+                                    class="w-full bg-transparent text-[13px] font-black text-center outline-none text-blue-900"
+                                    placeholder="0m">
+                            </div>
+                            <div class="text-center p-2 bg-cyan-50/50 rounded-lg border border-cyan-900/5">
+                                <span class="block text-[8px] font-black uppercase text-cyan-800/50">Nage</span>
+                                <input type="text" onchange="updateMountSpeed('nage', this.value)" id="mount-speed-nage"
+                                    class="w-full bg-transparent text-[13px] font-black text-center outline-none text-cyan-900"
+                                    placeholder="0m">
+                            </div>
+                            <div class="text-center p-2 bg-emerald-50/50 rounded-lg border border-emerald-900/5">
+                                <span class="block text-[8px] font-black uppercase text-emerald-800/50">Grimpe</span>
+                                <input type="text" onchange="updateMountSpeed('escalade', this.value)" id="mount-speed-esc"
+                                    class="w-full bg-transparent text-[13px] font-black text-center outline-none text-emerald-900"
                                     placeholder="0m">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-6 gap-2 text-center text-amber-950 mb-6">
-                            <div>
-                                <span class="text-[8px] font-black uppercase">For</span>
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">For</span>
                                 <input type="number" onchange="updateMountStat('str', this.value)" id="mount-str"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="18">
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="18">
+                                <span id="mod-mount-str" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
-                            <div><span class="text-[8px] font-black uppercase">Dex</span><input type="number"
-                                    onchange="updateMountStat('dex', this.value)" id="mount-dex"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
-                            <div><span class="text-[8px] font-black uppercase">Con</span><input type="number"
-                                    onchange="updateMountStat('con', this.value)" id="mount-con"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="15"></div>
-                            <div><span class="text-[8px] font-black uppercase">Int</span><input type="number"
-                                    onchange="updateMountStat('int', this.value)" id="mount-int"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="2"></div>
-                            <div><span class="text-[8px] font-black uppercase">Sag</span><input type="number"
-                                    onchange="updateMountStat('wis', this.value)" id="mount-wis"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="12"></div>
-                            <div><span class="text-[8px] font-black uppercase">Cha</span><input type="number"
-                                    onchange="updateMountStat('cha', this.value)" id="mount-cha"
-                                    class="w-full bg-transparent font-bold text-center outline-none" value="7"></div>
+
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">Dex</span>
+                                <input type="number" onchange="updateMountStat('dex', this.value)" id="mount-dex"
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="12">
+                                <span id="mod-mount-dex" class="text-[10px] font-bold text-amber-700">-</span>
+                            </div>
+
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">Con</span>
+                                <input type="number" onchange="updateMountStat('con', this.value)" id="mount-con"
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="15">
+                                <span id="mod-mount-con" class="text-[10px] font-bold text-amber-700">-</span>
+                            </div>
+
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">Int</span>
+                                <input type="number" onchange="updateMountStat('int', this.value)" id="mount-int"
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="2">
+                                <span id="mod-mount-int" class="text-[10px] font-bold text-amber-700">-</span>
+                            </div>
+
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">Sag</span>
+                                <input type="number" onchange="updateMountStat('wis', this.value)" id="mount-wis"
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="12">
+                                <span id="mod-mount-wis" class="text-[10px] font-bold text-amber-700">-</span>
+                            </div>
+
+                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                                <span class="text-[8px] font-black uppercase text-amber-900/60">Cha</span>
+                                <input type="number" onchange="updateMountStat('cha', this.value)" id="mount-cha"
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="7">
+                                <span id="mod-mount-cha" class="text-[10px] font-bold text-amber-700">-</span>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-amber-900/20 pt-4">

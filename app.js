@@ -546,7 +546,6 @@ export function saveData() {
     const index = parseInt(indexEl.value);
     const state = window.state;
 
-    // Déclaration de la variable de destination pour éviter l'erreur "undeclared variable"
     let targetArray = null;
 
     if (!state.mountData) {
@@ -579,7 +578,6 @@ export function saveData() {
         const useProfValue = document.getElementById('m-skill-use-prof').checked;
         const maxVal = useProfValue ? -1 : (parseInt(document.getElementById('m-skill-max').value) || 0);
         
-        // On récupère l'ancienne valeur current si on édite, sinon on initialise
         const oldArray = (type === 'skill') ? state.capacites : state.mountData.skills;
         const currentVal = (index === -1) ? (useProfValue ? 2 : maxVal) : (oldArray[index]?.current || 0);
 
@@ -602,6 +600,10 @@ export function saveData() {
             portee: document.getElementById('m-spell-range').value,
             cible: document.getElementById('m-spell-target').value,
             duree: document.getElementById('m-spell-duration').value,
+            incantation: document.getElementById('m-spell-incantation').value,
+            // --- AJOUT DE LA CONCENTRATION ---
+            concentration: document.getElementById('m-spell-concentration').checked,
+            // -------------------------------
             composantes: {
                 v: document.getElementById('comp-v').checked,
                 s: document.getElementById('comp-s').checked,
@@ -1013,19 +1015,69 @@ window.closePrepModal = () => {
 };
 
 window.updateMountStat = function(key, value) {
-    // On met à jour la valeur dans le state global
-    // Si c'est un nombre (AC, HP, Stats), on le convertit
-    const numericFields = ['hp_cur', 'hp_max', 'ac', 'str', 'dex', 'con', 'int', 'wis', 'cha'];
-    
-    if (numericFields.includes(key)) {
-        window.state.mountData[key] = parseInt(value) || 0;
-    } else {
-        window.state.mountData[key] = value;
+    const state = window.state;
+    if (!state.mountData) state.mountData = {};
+
+    // 1. GESTION DES TYPES DE DONNÉES
+    const isNumeric = ['hp', 'hpMax', 'ac', 'str', 'dex', 'con', 'int', 'wis', 'cha', 'perceptionPassive'].includes(key);
+    const val = isNumeric ? (parseInt(value) || 0) : value;
+
+    // 2. MISE À JOUR DU STATE (selon la structure)
+    // On gère les stats de base (str, dex...) et les champs simples (ac, name...)
+    state.mountData[key] = val;
+
+    // 3. CALCUL AUTOMATIQUE DU MODIFICATEUR (Bonus)
+    const statsBase = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+    if (statsBase.includes(key)) {
+        const mod = Math.floor((val - 10) / 2);
+        const modText = mod >= 0 ? `+${mod}` : mod;
+        
+        // Mise à jour visuelle du petit badge modificateur dans le HTML
+        const modEl = document.getElementById(`mod-mount-${key}`);
+        if (modEl) {
+            modEl.innerText = modText;
+            // Petit effet visuel de feedback
+            modEl.classList.add('text-amber-600');
+        }
     }
 
-    console.log("Update mountData:", key, value);
+    // 4. CAS PARTICULIER : MISE À JOUR DES PV
+    // Si tu as renommé tes IDs en mount-hp-cur et mount-hp-max
+    if (key === 'hp' || key === 'hpMax') {
+        console.log(`PV Monture mis à jour : ${state.mountData.hp}/${state.mountData.hpMax}`);
+    }
+
+    console.log("Update mountData:", key, val);
     
-    saveToSupabase(); 
+    saveToSupabase();
+};
+
+window.updateMountSpeed = function(type, value) {
+    // 1. Sécurité : Si mountData n'existe pas
+    if (!window.state.mountData) window.state.mountData = {};
+
+    if (typeof window.state.mountData.speed !== 'object' || window.state.mountData.speed === null) {
+        window.state.mountData.speed = {
+            sol: "0m",
+            vol: "0m",
+            nage: "0m",
+            escalade: "0m"
+        };
+    }
+
+    // 3. Mise à jour de la valeur spécifique
+    window.state.mountData.speed[type] = value;
+    
+    console.log(`Vitesse ${type} mise à jour :`, value);
+
+    // 4. Sauvegarde
+    if (window.saveToSupabase) window.saveToSupabase();
+};
+
+window.updateMountSave = function(stat, value) {
+    if (!window.state.mountData.saves) window.state.mountData.saves = {};
+    window.state.mountData.saves[stat] = parseInt(value) || 0;
+    saveToSupabase();
 };
 
 window.toggleSpellPreparation = (originalIndex) => {
@@ -1197,6 +1249,7 @@ function editSpell(index) {
     document.getElementById('comp-v').checked = s.composantes?.v || false;
     document.getElementById('comp-s').checked = s.composantes?.s || false;
     document.getElementById('comp-m').checked = s.composantes?.m || false;
+    document.getElementById('m-spell-concentration').checked = s.concentration || false;
     
     // Configuration de la modale pour le type "spell"
     document.getElementById('m-type').value = 'spell';
@@ -1214,6 +1267,27 @@ function editSpell(index) {
     // Affiche la modale (Assure-toi que l'ID est bien modal-ui)
     document.getElementById('modal-ui').classList.remove('hidden');
 }
+
+window.toggleActiveConcentration = function(spellIndex) {
+    const state = window.state;
+    const spell = state.spells[spellIndex];
+
+    // Sécurité : on ne peut activer la concentration que si le sort a le tag concentration
+    if (!spell.concentration) return;
+
+    // 1. On retire la concentration active de tous les autres sorts
+    state.spells.forEach((s, idx) => {
+        if (idx !== spellIndex) s.isActiveCon = false;
+    });
+    
+    // 2. On bascule l'état du sort actuel
+    spell.isActiveCon = !spell.isActiveCon;
+    
+    // 3. MISE À JOUR UI
+    // Note : Utilise le nom exact de ta fonction de rendu (renderSpells ou renderAll)
+    renderAll(); 
+};
+
 // --- INIT ---
 window.onload = checkUser;
 

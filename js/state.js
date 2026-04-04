@@ -1,4 +1,4 @@
-export const APP_VERSION = "3.0.4";
+export const APP_VERSION = "3.1.0";
 
 export function getInitialState() {
     return {
@@ -26,12 +26,13 @@ export function getInitialState() {
         mountData: {
             name: "",
             image: "",
-            hp_cur: 19,
-            hp_max: 19,
+            hp: 19,
+            hpMax: 19,
             ac: 11,
-            speed: "18m",
-            fly_speed: "0m",
-            str: 18, dex: 12, con: 15, int: 2, wis: 12, cha: 7,
+            speed: { sol: "9m", vol: "0m", nage: "0m", escalade: "0m" },
+            stats: { force: 10, dextérité: 10, constitution: 10, intelligence: 10, sagesse: 10, charisme: 10 },
+            saves: { force: 0, dextérité: 0, constitution: 0, intelligence: 0, sagesse: 0, charisme: 0 },
+            perceptionPassive: 10,
             inventoryLeft: [],
             inventoryRight: [],
             attacks: [],
