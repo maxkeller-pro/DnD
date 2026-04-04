@@ -741,22 +741,51 @@ export function renderMount() {
     const mount = window.state.mountData;
     if (!mount) return;
 
-    // On remplit les champs HTML avec les données du state
+    // 1. CHAMPS GÉNÉRAUX
     document.getElementById('mount-name').value = mount.name || "";
     document.getElementById('mount-ac').value = mount.ac || 10;
-    document.getElementById('mount-hp').value = mount.hp_cur || 0;
-    document.getElementById('mount-speed').value = mount.speed || "18m";
-    document.getElementById('mount-fly-speed').value = mount.fly_speed || "0m";
+    
+    // PV (Nouveau format)
+    document.getElementById('mount-hp-cur').value = mount.hp || 0;
+    document.getElementById('mount-hp-max').value = mount.hpMax || 0;
 
-    // Stats
-    document.getElementById('mount-str').value = mount.str || 10;
-    document.getElementById('mount-dex').value = mount.dex || 10;
-    document.getElementById('mount-con').value = mount.con || 10;
-    document.getElementById('mount-int').value = mount.int || 10;
-    document.getElementById('mount-wis').value = mount.wis || 10;
-    document.getElementById('mount-cha').value = mount.cha || 10;
+    const speedData = window.state.mountData.speed;
+    // 2. VITESSES (Nouveau format imbriqué)
+    const speeds = (typeof speedData === 'object' && speedData !== null) 
+    ? speedData 
+    : { sol: speedData || "0m", vol: "0m", nage: "0m", escalade: "0m" };
 
-    // N'oublie pas de vider et re-remplir tes listes d'attaques/capacités ici aussi
+    document.getElementById('mount-speed-sol').value = speeds.sol || "18m";
+    document.getElementById('mount-speed-vol').value = speeds.vol || "0m";
+    document.getElementById('mount-speed-nage').value = speeds.nage || "0m";
+    document.getElementById('mount-speed-esc').value = speeds.escalade || "0m";
+
+    // 3. STATISTIQUES ET MODIFICATEURS
+    const stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+    stats.forEach(s => {
+        const val = mount[s] || 10; // On garde la lecture à la racine si tu n'as pas migré dans mount.stats
+        document.getElementById(`mount-${s}`).value = val;
+        
+        // Calcul et affichage du bonus (+4, -1, etc.)
+        const mod = Math.floor((val - 10) / 2);
+        const modEl = document.getElementById(`mod-mount-${s}`);
+        if (modEl) modEl.innerText = mod >= 0 ? `+${mod}` : mod;
+    });
+
+    // 4. SAUVEGARDES ET PERCEPTION (Les nouveaux champs)
+    if (mount.saves) {
+        Object.entries(mount.saves).forEach(([stat, val]) => {
+            const el = document.getElementById(`mount-save-${stat}`);
+            if (el) el.value = val;
+        });
+    }
+    
+    const perEl = document.getElementById('mount-perception-passive');
+    if (perEl) perEl.value = mount.perceptionPassive || 10;
+
+    if (window.renderMountAttacks) window.renderMountAttacks();
+    if (window.renderMountSkills) window.renderMountSkills();
+    if (window.renderMountInventory) window.renderMountInventory();
 };
 
 export function renderMountActions() {
@@ -1082,6 +1111,8 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
         const isOpened = state.openedDescs.includes(uniqueKey);
         const isPrepared = spell.prepare === true;
         const isCantrip = spell.niveau == 0;
+        const isConcentration = spell.concentration === true;
+        const isActiveCon = spell.isActiveCon === true; // Nouvel état
 
         const card = document.createElement('div');
 
@@ -1118,11 +1149,17 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
             }
         };
 
+        // --- STYLISATION DE LA BORDURE ET EFFET ACTIF ---
         let borderColor = 'border-zinc-800';
         if (isCantrip) borderColor = 'border-amber-500/30';
         else if (isPrepared) borderColor = 'border-purple-500/30';
+        
+        // Si la concentration est active, on ajoute une lueur bleue
+        const activeEffect = isActiveCon 
+            ? 'ring-1 ring-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)] border-blue-500/50' 
+            : '';
 
-        card.className = `bg-zinc-900/40 border ${borderColor} rounded-xl p-3 hover:border-purple-500/50 transition cursor-pointer group relative h-fit`;
+        card.className = `bg-zinc-900/40 border ${borderColor} ${activeEffect} rounded-xl p-3 hover:border-purple-500/50 transition-all cursor-pointer group relative h-fit`;
 
         card.onclick = (e) => {
             if (e.target.closest('button')) return;
@@ -1141,7 +1178,21 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
             <div class="flex items-center gap-3">
                 ${prepButton}
                 <div>
-                    <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
+                        
+                        ${isConcentration ? `
+                            <button onclick="event.stopPropagation(); window.toggleActiveConcentration(${spell.originalIndex})" 
+                                class="flex items-center justify-center min-w-[18px] h-5 px-1 text-[10px] font-black rounded-md transition-all
+                                ${isActiveCon 
+                                    ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(37,99,235,0.6)] border border-blue-400' 
+                                    : 'bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-blue-500/50 hover:text-blue-400'}" 
+                                title="${isActiveCon ? 'Concentration active (cliquer pour arrêter)' : 'Cliquer pour marquer comme actif'}">
+                                C
+                            </button>
+                        ` : ''}
+                    </div>
+                    
                     <span class="text-[10px] font-bold ${isCantrip ? 'text-amber-500' : 'text-purple-500'} uppercase tracking-widest">
                         ${isCantrip ? 'Cantrip' : 'Niveau ' + spell.niveau}
                     </span>
