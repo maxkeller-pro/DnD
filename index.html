@@ -117,6 +117,56 @@
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Sac à
                     Dos</span>
             </button>
+
+            <button id="btn-wildshape-manager" onclick="window.openWildShapeManager()"
+                class="w-full py-2 mt-2 bg-emerald-900/20 text-emerald-500 border border-emerald-500/30 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 hover:text-white transition hidden">
+                🐾 Gérer Formes Sauvages
+            </button>
+
+            <div id="transformation-zone" class="mt-4">
+            </div>
+
+            <div id="wildshape-manager-modal"
+                class="fixed inset-0 z- flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4">
+                <div
+                    class="bg-zinc-900 border border-emerald-500/30 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
+                    <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                        <h3 class="text-emerald-500 font-black uppercase tracking-widest text-sm italic">Catalogue des
+                            Formes Sauvages</h3>
+                        <button onclick="document.getElementById('wildshape-manager-modal').classList.add('hidden')"
+                            class="text-white/50 hover:text-white">✕</button>
+                    </div>
+
+                    <div class="p-4 overflow-y-auto flex-1">
+                        <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-xl mb-6">
+                            <p class="text-[10px] font-black uppercase text-emerald-500 mb-3">Ajouter une nouvelle forme
+                            </p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <input type="text" id="ws-new-nom" placeholder="Nom (ex: Ours)"
+                                    class="col-span-2 bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="number" id="ws-new-ac" placeholder="CA"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="number" id="ws-new-hp" placeholder="PV"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="number" id="ws-new-str" placeholder="FOR"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="number" id="ws-new-dex" placeholder="DEX"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="number" id="ws-new-con" placeholder="CON"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                                <input type="text" id="ws-new-speed" placeholder="Vitesse"
+                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
+                            </div>
+                            <button onclick="window.addWildShape()"
+                                class="w-full mt-3 py-2 bg-emerald-600 text-white font-black uppercase text-[10px] rounded-lg">Enregistrer
+                                la bête</button>
+                        </div>
+
+                        <div id="wildshape-list-container" class="space-y-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="lg:col-span-3 card p-8 rounded-2xl shadow-2xl border border-gray-800">
@@ -661,7 +711,8 @@
                                 <label class="flex items-center gap-2 cursor-pointer group">
                                     <input type="checkbox" id="m-spell-concentration" class="w-4 h-4 accent-blue-500">
                                     <span class="text-xs font-bold text-zinc-400 group-hover:text-white transition">
-                                        Concentration <span class="text-[10px] text-blue-400/60 ml-1">(Nécessite un maintien)</span>
+                                        Concentration <span class="text-[10px] text-blue-400/60 ml-1">(Nécessite un
+                                            maintien)</span>
                                     </span>
                                 </label>
                             </div>
@@ -1075,14 +1126,17 @@
                                     value="11">
                             </div>
 
-                            <div class="flex flex-col items-center p-3 bg-amber-900/5 rounded-xl border border-amber-900/10">
-                                <span class="block text-[10px] font-black uppercase text-amber-900/60 mb-1">Points de Vie</span>
+                            <div
+                                class="flex flex-col items-center p-3 bg-amber-900/5 rounded-xl border border-amber-900/10">
+                                <span class="block text-[10px] font-black uppercase text-amber-900/60 mb-1">Points de
+                                    Vie</span>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" id="mount-hp-cur" onchange="updateMountStat('hp', this.value)" 
+                                    <input type="number" id="mount-hp-cur" onchange="updateMountStat('hp', this.value)"
                                         class="w-12 bg-transparent text-2xl font-black text-center outline-none text-red-700"
                                         value="19">
                                     <span class="text-amber-900/30 text-xl font-light">/</span>
-                                    <input type="number" id="mount-hp-max" onchange="updateMountStat('hpMax', this.value)" 
+                                    <input type="number" id="mount-hp-max"
+                                        onchange="updateMountStat('hpMax', this.value)"
                                         class="w-12 bg-transparent text-lg font-bold text-center outline-none text-amber-900/40"
                                         value="19">
                                 </div>
@@ -1110,49 +1164,60 @@
                             </div>
                             <div class="text-center p-2 bg-emerald-50/50 rounded-lg border border-emerald-900/5">
                                 <span class="block text-[8px] font-black uppercase text-emerald-800/50">Grimpe</span>
-                                <input type="text" onchange="updateMountSpeed('escalade', this.value)" id="mount-speed-esc"
+                                <input type="text" onchange="updateMountSpeed('escalade', this.value)"
+                                    id="mount-speed-esc"
                                     class="w-full bg-transparent text-[13px] font-black text-center outline-none text-emerald-900"
                                     placeholder="0m">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-6 gap-2 text-center text-amber-950 mb-6">
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">For</span>
                                 <input type="number" onchange="updateMountStat('str', this.value)" id="mount-str"
-                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="18">
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm"
+                                    value="18">
                                 <span id="mod-mount-str" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
 
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">Dex</span>
                                 <input type="number" onchange="updateMountStat('dex', this.value)" id="mount-dex"
-                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="12">
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm"
+                                    value="12">
                                 <span id="mod-mount-dex" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
 
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">Con</span>
                                 <input type="number" onchange="updateMountStat('con', this.value)" id="mount-con"
-                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="15">
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm"
+                                    value="15">
                                 <span id="mod-mount-con" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
 
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">Int</span>
                                 <input type="number" onchange="updateMountStat('int', this.value)" id="mount-int"
                                     class="w-full bg-transparent font-black text-center outline-none text-sm" value="2">
                                 <span id="mod-mount-int" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
 
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">Sag</span>
                                 <input type="number" onchange="updateMountStat('wis', this.value)" id="mount-wis"
-                                    class="w-full bg-transparent font-black text-center outline-none text-sm" value="12">
+                                    class="w-full bg-transparent font-black text-center outline-none text-sm"
+                                    value="12">
                                 <span id="mod-mount-wis" class="text-[10px] font-bold text-amber-700">-</span>
                             </div>
 
-                            <div class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
+                            <div
+                                class="flex flex-col items-center p-1 bg-amber-900/5 rounded-lg border border-amber-900/10">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60">Cha</span>
                                 <input type="number" onchange="updateMountStat('cha', this.value)" id="mount-cha"
                                     class="w-full bg-transparent font-black text-center outline-none text-sm" value="7">
@@ -1313,15 +1378,18 @@
         </div>
     </div>
 
-    <div id="survival-catalogue-modal" class="fixed inset-0 z-[120] flex items-center justify-center hidden bg-black/70 backdrop-blur-sm p-4">
-        <div class="bg-zinc-900 border border-emerald-500/30 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
+    <div id="survival-catalogue-modal"
+        class="fixed inset-0 z-[120] flex items-center justify-center hidden bg-black/70 backdrop-blur-sm p-4">
+        <div
+            class="bg-zinc-900 border border-emerald-500/30 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
             <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                <h3 class="text-emerald-500 font-black uppercase tracking-widest text-sm italic">Catalogue de Survie</h3>
+                <h3 class="text-emerald-500 font-black uppercase tracking-widest text-sm italic">Catalogue de Survie
+                </h3>
                 <button onclick="closeSurvivalCatalogue()" class="text-white/50 hover:text-white">✕</button>
             </div>
-            
+
             <div id="survival-items-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                </div>
+            </div>
         </div>
     </div>
 

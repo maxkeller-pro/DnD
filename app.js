@@ -1,7 +1,7 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration } from './js/ui-render.js';
+import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab } from './js/ui-modals.js';
 import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney } from './js/utils.js';
 
@@ -30,7 +30,7 @@ window.calculateSpellStats = function() {
 
     let castingStat = "Charisme"; 
     if (s.classe === "Magicien") castingStat = "Intelligence";
-    if (s.classe === "Clerc" || s.classe === "Druide") castingStat = "Sagesse";
+    if (s.classe === "Clerc" || s.classe === "Druide" || s.classe === "Rôdeur") castingStat = "Sagesse";
 
     const statValue = s.stats[castingStat] || 10;
     const statMod = Math.floor((statValue - 10) / 2);
@@ -1102,6 +1102,7 @@ window.reorderSpells = (fromIndex, toIndex) => {
 };
 
 window.updateField = (path, value) => {
+    console.log("test");
     // 1. Détecter si c'est un nombre pour éviter de stocker "10" au lieu de 10
     const val = (value === "" || isNaN(value)) ? value : parseFloat(value);
     
@@ -1114,7 +1115,7 @@ window.updateField = (path, value) => {
         if (!target[keys[i]]) target[keys[i]] = {};
         target = target[keys[i]];
     }
-    
+
     target[keys[keys.length - 1]] = val;
     
     if (path.startsWith('stats.')) {
@@ -1288,6 +1289,79 @@ window.toggleActiveConcentration = function(spellIndex) {
     renderAll(); 
 };
 
+// --- SYSTÈME DE FORME SAUVAGE ---
+
+window.openWildShapeManager = function() {
+    document.getElementById('wildshape-manager-modal').classList.remove('hidden');
+    renderWildShapeList();
+};
+
+window.addWildShape = function() {
+    const shape = {
+        nom: document.getElementById('ws-new-nom').value,
+        ac: parseInt(document.getElementById('ws-new-ac').value) || 10,
+        hp: parseInt(document.getElementById('ws-new-hp').value) || 10,
+        str: parseInt(document.getElementById('ws-new-str').value) || 10,
+        dex: parseInt(document.getElementById('ws-new-dex').value) || 10,
+        con: parseInt(document.getElementById('ws-new-con').value) || 10,
+        speed: document.getElementById('ws-new-speed').value || "12m"
+    };
+
+    if (!window.state.wildShapes) window.state.wildShapes = [];
+    window.state.wildShapes.push(shape);
+    
+    // Reset formulaire
+    document.querySelectorAll('[id^="ws-new-"]').forEach(i => i.value = "");
+    
+    renderWildShapeList();
+    renderTransformationButton();
+    saveToSupabase();
+};
+
+window.deleteWildShape = function(index) {
+    window.state.wildShapes.splice(index, 1);
+    renderWildShapeList();
+    renderTransformationButton();
+    saveToSupabase();
+};
+
+window.toggleTransformation = function(index = null) {
+    if (window.state.isTransformed) {
+        // Retour à la forme normale
+        window.state.isTransformed = false;
+        window.state.activeShape = null;
+    } else {
+        // Transformation
+        if (index === null || index === "") {
+            alert("Veuillez choisir une forme !");
+            return;
+        }
+        const shape = window.state.wildShapes[index];
+        window.state.isTransformed = true;
+        window.state.activeShape = shape;
+    }
+    
+    // On rafraîchit sans sauvegarder immédiatement pour éviter d'écraser les PV réels 
+    // par les PV de la bête dans la base de données (optionnel selon ta préférence)
+    renderAll(true); 
+};
+
+// Attache les fonctions au chargement
+window.renderWildShapeList = function() {
+    const container = document.getElementById('wildshape-list-container');
+    if (!container) return;
+    
+    container.innerHTML = (window.state.wildShapes || []).map((s, i) => `
+        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+            <div>
+                <p class="text-white font-bold text-xs uppercase">${s.nom}</p>
+                <p class="text-[9px] text-emerald-500 uppercase">PV: ${s.hp} | CA: ${s.ac} | FOR: ${s.str} | DEX: ${s.dex} | CON: ${s.con}</p>
+            </div>
+            <button onclick="window.deleteWildShape(${i})" class="text-red-500/50 hover:text-red-500 text-xs">✕</button>
+        </div>
+    `).join('');
+};
+
 // --- INIT ---
 window.onload = checkUser;
 
@@ -1350,8 +1424,11 @@ window.renderMountPortrait = renderMountPortrait;
 window.renderMountInventory = renderMountInventory;
 window.renderMountActions = renderMountActions;
 window.renderMount = renderMount;
+window.renderTransformationButton = renderTransformationButton;
 window.switchTab = switchTab;
 window.renderBag = renderBag;
 window.subtractMoney = subtractMoney;
+window.saveToSupabase = saveToSupabase;
+window.renderWildShapeList = renderWildShapeList;
 window.BAG_TYPES = BAG_TYPES;
 window.SKILLS_LIST = SKILLS_LIST;

@@ -1,4 +1,4 @@
-export const APP_VERSION = "3.1.0";
+export const APP_VERSION = "3.1.1";
 
 export function getInitialState() {
     return {
@@ -37,7 +37,10 @@ export function getInitialState() {
             inventoryRight: [],
             attacks: [],
             skills: []
-        }
+        },
+        wildShapes: [], // Liste des monstres enregistrés
+        isTransformed: false, // État actuel
+        activeShapeIndex: null // Index de la forme utilisée
     };
 }
 

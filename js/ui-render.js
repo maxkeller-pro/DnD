@@ -13,15 +13,49 @@ export function renderAll(shouldSave = true) {
 
     const p = getProf();
 
-    // --- 1. INPUTS DE BASE (TEXTE & NOMBRES) ---
+    // --- LOGIQUE DRUIDE : AFFICHAGE CONDITIONNEL ---
+    const isDruid = state.classe && state.classe.toLowerCase().includes('druide');
+    
+    // Bouton de gestion sous le sac à dos
+    const wsButton = document.getElementById('btn-wildshape-manager');
+    if (wsButton) {
+        isDruid ? wsButton.classList.remove('hidden') : wsButton.classList.add('hidden');
+    }
+    
+    // Zone de sélection de transformation
+    const transformationZone = document.getElementById('transformation-zone');
+    if (transformationZone) {
+        isDruid ? transformationZone.classList.remove('hidden') : transformationZone.classList.add('hidden');
+    }
+
+    // --- LOGIQUE DE SUBSTITUTION (FORME SAUVAGE) ---
+    let displayStats = { ...state.stats };
+    let displayAC = state.ac;
+    let displayHPCur = state.hp_cur;
+    let displayHPMax = state.hp_max;
+    let displaySpeed = state.speed || 9;
+
+    if (state.isTransformed && state.activeShape) {
+        const shape = state.activeShape;
+        displayStats.Force = shape.str;
+        displayStats.Dextérité = shape.dex;
+        displayStats.Constitution = shape.con;
+        
+        displayAC = shape.ac;
+        displayHPCur = shape.hp; 
+        displayHPMax = shape.hp;
+        displaySpeed = shape.speed;
+    }
+
+    // --- 1. INPUTS DE BASE ---
     const basicInputs = {
         'char-name': state.nom,
         'char-race': state.race || "Humain",
         'char-class': state.classe,
         'char-level': state.niveau,
-        'char-ac': state.ac,
-        'hp-cur': state.hp_cur,
-        'hp-max': state.hp_max,
+        'char-ac': displayAC,
+        'hp-cur': displayHPCur,
+        'hp-max': displayHPMax,
         'hd-cur': state.hd_cur,
         'gold-pp': state.money.pp,
         'gold-po': state.money.po,
@@ -34,24 +68,21 @@ export function renderAll(shouldSave = true) {
         if (el) el.value = val;
     }
 
-    // Cas spécifique : Speed
     const speedEl = document.getElementById('speed');
-    if (speedEl) speedEl.value = state.speed || 9;
+    if (speedEl) speedEl.value = displaySpeed;
 
-    // --- 2. TEXTES CALCULÉS (BONUS) ---
+    // --- 2. TEXTES CALCULÉS ---
     const profBonusEl = document.getElementById('prof-bonus');
     if (profBonusEl) profBonusEl.innerText = `+${p}`;
 
     const hdMaxEl = document.getElementById('hd-max');
     if (hdMaxEl) hdMaxEl.innerText = state.niveau;
 
-    // --- 3. CALCULS COMPLEXES (INITIATIVE & PERCEPTION) ---
-    // Initiative
-    const init = getMod(state.stats.Dextérité);
+    // --- 3. CALCULS COMPLEXES ---
+    const init = getMod(displayStats.Dextérité);
     const initEl = document.getElementById('init-bonus');
     if (initEl) initEl.innerText = (init >= 0 ? '+' : '') + init;
 
-    // Perception Passive
     let perceptionLevel = 0;
     if (state.m_skills) {
         if (Array.isArray(state.m_skills)) {
@@ -67,11 +98,9 @@ export function renderAll(shouldSave = true) {
     if (passiveEl) passiveEl.innerText = passiveValue;
 
     // --- 4. APPELS DES RENDUS DE LISTES ---
-    // On s'assure que ces fonctions existent avant de les appeler
     if (window.updateHPUI) window.updateHPUI();
 
-    // Listes dynamiques (doivent être exportées sur window ou présentes dans ce fichier)
-    renderStatsList();
+    renderStatsList(displayStats); 
     renderSavesList();
     renderSkillsList();
     renderAttaques();
@@ -89,30 +118,48 @@ export function renderAll(shouldSave = true) {
     renderInspiration();
     renderMountActions();
     renderBag();
+    
+    // Rendu spécifique au Druide
+    if (isDruid) {
+        renderTransformationButton();
+        renderWildShapeList();
+    }
 
-    // --- 5. SAUVEGARDE ---
     if (shouldSave) saveToSupabase();
 }
 
-export function renderStatsList() {
+export function renderStatsList(overrideStats = null) {
     const container = document.getElementById('stats-area');
-    if (!container || !window.state.stats) return;
-
-    // L'ordre d'affichage des statistiques
+    // On utilise soit les stats passées en paramètre (le monstre), soit les stats du druide
+    const statsToUse = overrideStats || window.state.stats;
+    
+    if (!container || !statsToUse) return;
 
     container.innerHTML = statsOrder.map(k => {
-        const v = window.state.stats[k] || 10;
+        const v = statsToUse[k] || 10;
         const mod = getMod(v);
+        
+        // --- LOGIQUE DRUIDE : FORME SAUVAGE ---
+        // On vérifie si on doit mettre en avant les stats physiques (Force, Dex, Con)
+        const isPhysical = ['Force', 'Dextérité', 'Constitution'].includes(k);
+        const isTransformed = window.state.isTransformed && isPhysical;
+        
+        // Classes CSS dynamiques
+        const borderColor = isTransformed ? 'border-emerald-500/40' : 'border-zinc-800';
+        const textColor = isTransformed ? 'text-emerald-400' : 'text-white';
+        const bgColor = isTransformed ? 'bg-emerald-900/10' : 'bg-zinc-900/50';
 
         return `
-            <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
-                <span class="text-[10px] uppercase font-bold text-zinc-500">${k}</span>
+            <div class="flex justify-between items-center ${bgColor} p-3 rounded-xl border ${borderColor} transition-colors duration-300">
+                <span class="text-[10px] uppercase font-bold ${isTransformed ? 'text-emerald-500/60' : 'text-zinc-500'}">${k}</span>
                 <div class="flex items-center gap-3">
-                    <input type="number" value="${v}" 
-                        onblur="window.updateField('stats.${k}', this.value)" 
-                        class="w-12 text-center bg-transparent !border-none font-bold outline-none text-white">
+                    <input type="number" 
+                        value="${v}" 
+                        ${isTransformed ? 'disabled' : ''} 
+                        onchange="window.updateField('stats.${k}', this.value)" 
+                        class="w-12 text-center bg-transparent !border-none font-bold outline-none ${textColor} ${isTransformed ? 'cursor-not-allowed' : ''}">
                     
-                    <span class="text-white font-black text-base w-8 text-right">
+                    <span class="${textColor} font-black text-base w-8 text-right">
                         ${(mod >= 0 ? '+' : '') + mod}
                     </span>
                 </div>
@@ -1280,3 +1327,47 @@ function updateWeightUI() {
     else if (percent >= 80) bar.classList.add("bg-orange-500");
     else bar.classList.add("bg-emerald-600");
 }
+
+export function renderTransformationButton() {
+    const container = document.getElementById('transformation-zone');
+    if (!container) return;
+
+    if (window.state.isTransformed) {
+        container.innerHTML = `
+            <button onclick="window.toggleTransformation()" 
+                class="w-full py-3 bg-red-600 text-white rounded-xl font-black uppercase text-xs tracking-tighter shadow-lg animate-pulse">
+                Quitter la Forme Sauvage (${window.state.activeShape.nom})
+            </button>`;
+    } else {
+        const options = (window.state.wildShapes || []).map((s, i) => 
+            `<option value="${i}">${s.nom} (PV:${s.hp})</option>`
+        ).join('');
+
+        container.innerHTML = `
+            <div class="flex gap-2">
+                <select id="ws-picker" class="flex-1 bg-zinc-800 text-white rounded-lg p-2 text-xs border border-emerald-500/30">
+                    <option value="">-- Choisir une forme --</option>
+                    ${options}
+                </select>
+                <button onclick="window.toggleTransformation(document.getElementById('ws-picker').value)" 
+                    class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px]">
+                    ✨ Transformer
+                </button>
+            </div>`;
+    }
+}
+
+export function renderWildShapeList() {
+    const container = document.getElementById('wildshape-list-container');
+    if (!container) return;
+    
+    container.innerHTML = (window.state.wildShapes || []).map((s, i) => `
+        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+            <div>
+                <p class="text-white font-bold text-xs uppercase">${s.nom}</p>
+                <p class="text-[9px] text-emerald-500 uppercase">PV: ${s.hp} | CA: ${s.ac} | FOR: ${s.str} | DEX: ${s.dex} | CON: ${s.con}</p>
+            </div>
+            <button onclick="window.deleteWildShape(${i})" class="text-red-500/50 hover:text-red-500 text-xs">✕</button>
+        </div>
+    `).join('');
+};
