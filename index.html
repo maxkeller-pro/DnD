@@ -35,7 +35,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-4">
-                    <button onclick="handleLogin()"
+                    <button id="btn-login"
                         class="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl uppercase text-xs tracking-widest transition shadow-lg shadow-blue-900/20">
                         Connexion
                     </button>
@@ -118,55 +118,17 @@
                     Dos</span>
             </button>
 
+            <!-- Zone Druide : Forme Sauvage -->
+            <div id="transformation-zone"
+                class="hidden mb-4 p-3 bg-zinc-900/80 border border-emerald-500/20 rounded-xl">
+                <!-- Le contenu est injecté dynamiquement par renderTransformationButton() -->
+            </div>
+
+            <!-- Bouton pour ouvrir la modale de gestion (placé sous le sac à dos) -->
             <button id="btn-wildshape-manager" onclick="window.openWildShapeManager()"
-                class="w-full py-2 mt-2 bg-emerald-900/20 text-emerald-500 border border-emerald-500/30 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 hover:text-white transition hidden">
-                🐾 Gérer Formes Sauvages
+                class="hidden w-full py-2 px-3 mt-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2">
+                🐾 Gérer mes Formes Sauvages
             </button>
-
-            <div id="transformation-zone" class="mt-4">
-            </div>
-
-            <div id="wildshape-manager-modal"
-                class="fixed inset-0 z- flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4">
-                <div
-                    class="bg-zinc-900 border border-emerald-500/30 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
-                    <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                        <h3 class="text-emerald-500 font-black uppercase tracking-widest text-sm italic">Catalogue des
-                            Formes Sauvages</h3>
-                        <button onclick="document.getElementById('wildshape-manager-modal').classList.add('hidden')"
-                            class="text-white/50 hover:text-white">✕</button>
-                    </div>
-
-                    <div class="p-4 overflow-y-auto flex-1">
-                        <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-xl mb-6">
-                            <p class="text-[10px] font-black uppercase text-emerald-500 mb-3">Ajouter une nouvelle forme
-                            </p>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <input type="text" id="ws-new-nom" placeholder="Nom (ex: Ours)"
-                                    class="col-span-2 bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="number" id="ws-new-ac" placeholder="CA"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="number" id="ws-new-hp" placeholder="PV"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="number" id="ws-new-str" placeholder="FOR"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="number" id="ws-new-dex" placeholder="DEX"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="number" id="ws-new-con" placeholder="CON"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                                <input type="text" id="ws-new-speed" placeholder="Vitesse"
-                                    class="bg-zinc-800 border-none rounded-lg p-2 text-white text-xs">
-                            </div>
-                            <button onclick="window.addWildShape()"
-                                class="w-full mt-3 py-2 bg-emerald-600 text-white font-black uppercase text-[10px] rounded-lg">Enregistrer
-                                la bête</button>
-                        </div>
-
-                        <div id="wildshape-list-container" class="space-y-2">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="lg:col-span-3 card p-8 rounded-2xl shadow-2xl border border-gray-800">
@@ -195,6 +157,7 @@
                             oninput="window.updateField('nom', this.value);">
 
                         <div class="flex flex-wrap gap-3 items-center">
+                            <!-- RACE -->
                             <div
                                 class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
                                 <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Race</span>
@@ -212,16 +175,16 @@
                                     <option value="Tieffelin">Tieffelin</option>
                                     <option value="Goliath">Goliath</option>
                                     <option value="Aasimar">Aasimar</option>
+                                    <option value="Yuan-ti">Yuan-ti</option>
                                 </select>
                             </div>
-                            <div
-                                class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
-                                <span
-                                    class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
+
+                            <!-- CLASSE -->
+                            <div class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
                                 <select id="char-class"
-                                    oninput="window.updateField('classe', this.value); updateClassSaves(this.value);"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
-                                    onchange="window.updateField('classe', this.value); calculateSpellStats(); renderAll()">
+                                    onchange="window.onClassChange(this.value)">
                                     <option value="Artificier">Artificier</option>
                                     <option value="Barbare">Barbare</option>
                                     <option value="Barde">Barde</option>
@@ -237,6 +200,21 @@
                                     <option value="Roublard">Roublard</option>
                                 </select>
                             </div>
+
+                            <!-- SOUS-CLASSE (Débloquée au Niveau 3) -->
+                            <div id="subclass-wrapper"
+                                class="hidden flex items-center gap-2 bg-amber-950/40 px-4 py-1.5 rounded-full border border-amber-600/40">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-amber-500">Sous-classe</span>
+
+                                <!-- Remplacement de l'input par un select -->
+                                <select id="char-subclass"
+                                    class="bg-transparent border-none p-0 text-sm font-bold text-amber-300 focus:ring-0 cursor-pointer"
+                                    onchange="window.onSubclassChange(this.value)">
+                                    <!-- Les options seront générées dynamiquement par renderAll() -->
+                                </select>
+                            </div>
+
+                            <!-- NIVEAU -->
                             <div
                                 class="flex items-center gap-2 bg-red-900/20 px-4 py-1.5 rounded-full border border-red-900/30">
                                 <span class="text-[9px] font-black uppercase tracking-widest text-red-500">Niveau</span>
@@ -247,6 +225,7 @@
                         </div>
                     </div>
 
+                    <!-- RESTE DE LA LIGNE (Vitesse, CA, Maîtrise, etc.) -->
                     <div class="flex gap-4 w-full md:w-auto">
                         <div
                             class="bg-black/40 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
@@ -315,6 +294,8 @@
                         class="bg-black/50 h-16 rounded-2xl border border-gray-800 flex items-center px-4 gap-4 relative overflow-hidden">
                         <div id="hp-bar-bg"
                             class="absolute left-0 top-0 h-full bg-green-600/10 transition-all duration-700"></div>
+
+                        <!-- PV Actuels / PV Max -->
                         <div class="z-10 flex items-center gap-2">
                             <input type="number" id="hp-cur" class="hp-input !text-3xl !w-16 text-white"
                                 oninput="updateHP('cur', this.value)">
@@ -322,6 +303,17 @@
                             <input type="number" id="hp-max" class="hp-input !text-xl !w-12 text-gray-500"
                                 oninput="updateHP('max', this.value)">
                         </div>
+
+                        <!-- NOUVEAU : Champ pour les PV Temporaires -->
+                        <div class="z-10 flex items-center gap-1 bg-zinc-900/80 px-2 py-1 rounded-xl border border-emerald-500/30"
+                            title="Points de Vie Temporaires">
+                            <span class="text-xs">🛡️</span>
+                            <input type="number" id="hp-temp"
+                                class="hp-input !text-lg !w-10 text-emerald-400 font-bold bg-transparent text-center"
+                                placeholder="0" oninput="updateHP('temp', this.value)">
+                        </div>
+
+                        <!-- Barre de progression -->
                         <div class="z-10 flex-1 h-1.5 progress-bg !bg-black/80 rounded-full overflow-hidden">
                             <div id="hp-bar-fill" class="progress-fill bg-green-500 h-full transition-all duration-500">
                             </div>
@@ -1390,6 +1382,134 @@
 
             <div id="survival-items-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
             </div>
+        </div>
+    </div>
+
+    <!-- Modale de Gestion des Formes Sauvages -->
+    <div id="wildshape-manager-modal"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-zinc-900 border border-emerald-500/30 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+
+            <!-- En-tête de la Modale -->
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-950">
+                <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider flex items-center gap-2">
+                    🐾 Gestionnaire de Formes Sauvages
+                </h3>
+                <button onclick="document.getElementById('wildshape-manager-modal').classList.add('hidden')"
+                    class="text-zinc-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            <div class="p-4 overflow-y-auto space-y-6 flex-1">
+
+                <!-- Formulaire d'ajout d'une forme -->
+                <div class="bg-zinc-800/50 p-4 rounded-xl border border-white/5 space-y-3">
+                    <h4 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Ajouter une nouvelle forme</h4>
+
+                    <div class="grid grid-cols-1 gap-2">
+                        <input type="text" id="ws-new-nom" placeholder="Nom de la créature (ex: Loup, Ours brun)"
+                            class="bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">CA</label>
+                            <input type="number" id="ws-new-ac" placeholder="13"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs text-center focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">FOR</label>
+                            <input type="number" id="ws-new-str" placeholder="12"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs text-center focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">DEX</label>
+                            <input type="number" id="ws-new-dex" placeholder="15"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs text-center focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">CON</label>
+                            <input type="number" id="ws-new-con" placeholder="12"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs text-center focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">Vitesse</label>
+                            <input type="text" id="ws-new-speed" placeholder="12m"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-zinc-400 uppercase font-semibold">PV Temp (x Niveau)</label>
+                            <select id="ws-new-hpmult"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-emerald-400 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500 font-bold">
+                                <option value="1">1x Niveau</option>
+                                <option value="2">2x Niveau</option>
+                                <option value="3">3x Niveau</option>
+                                <option value="4" selected>4x Niveau</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Champ d'importation de fichier image -->
+                    <div>
+                        <label class="text-[10px] text-zinc-400 uppercase font-semibold">Image de la forme (Fichier PC)</label>
+                        <input type="file" id="ws-new-image-file" accept="image/*"
+                            class="w-full bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg p-1.5 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
+                        <!-- Champ masqué pour stocker l'image encodée en base64 -->
+                        <input type="hidden" id="ws-new-image-base64">
+                    </div>
+
+                    <script>
+                    // Écouteur pour convertir l'image locale dès la sélection
+                    document.getElementById('ws-new-image-file')?.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            // Stocke l'image convertie en base64 dans le champ caché
+                            document.getElementById('ws-new-image-base64').value = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                    </script>
+
+                    <!-- Option Forme Titan -->
+                    <div class="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                        <input type="checkbox" id="ws-new-is-titan"
+                            class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                        <label for="ws-new-is-titan"
+                            class="text-xs text-amber-400 font-bold uppercase cursor-pointer select-none">
+                            Forme Titan (Durée : 10 min, autorise les sorts de Titan)
+                        </label>
+                    </div>
+
+                    <button onclick="window.addWildShape()"
+                        class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-xs rounded-lg transition tracking-wider shadow-lg">
+                        + Enregistrer la forme
+                    </button>
+                </div>
+
+                <!-- Liste des formes enregistrées -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Formes connues</h4>
+                    <div id="wildshape-list-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Injecté dynamiquement par renderWildShapeList() -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Pied de modale -->
+            <div class="p-3 bg-zinc-950 border-t border-white/10 text-right">
+                <button onclick="document.getElementById('wildshape-manager-modal').classList.add('hidden')"
+                    class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-lg uppercase transition">
+                    Fermer
+                </button>
+            </div>
+
         </div>
     </div>
 

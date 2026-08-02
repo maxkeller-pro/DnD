@@ -1,5 +1,5 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, SUBCLASSES_BY_CLASS, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
 import { saveToSupabase } from './api.js';
 
 /**
@@ -12,39 +12,83 @@ export function renderAll(shouldSave = true) {
     if (!state) return;
 
     const p = getProf();
+    const level = parseInt(state.niveau) || 1;
+
+    // --- LOGIQUE SOUS-CLASSE (NIVEAU >= 3) ---
+    const subWrapper = document.getElementById('subclass-wrapper');
+    const subSelect = document.getElementById('char-subclass');
+
+    if (subWrapper && subSelect) {
+        if (level >= 3) {
+            subWrapper.classList.remove('hidden');
+
+            const currentClass = state.classe || "Barbare";
+            const availableSubclasses = SUBCLASSES_BY_CLASS[currentClass] || [];
+
+            let optionsHTML = `<option value="">-- Sélectionner --</option>`;
+            optionsHTML += availableSubclasses.map(sub =>
+                `<option value="${sub}" ${state.subclasse === sub ? 'selected' : ''} class="bg-zinc-900 text-amber-300">${sub}</option>`
+            ).join('');
+
+            subSelect.innerHTML = optionsHTML;
+
+            if (state.subclasse && !availableSubclasses.includes(state.subclasse)) {
+                const customOption = document.createElement('option');
+                customOption.value = state.subclasse;
+                customOption.innerText = state.subclasse;
+                customOption.selected = true;
+                customOption.className = "bg-zinc-900 text-amber-300";
+                subSelect.appendChild(customOption);
+            }
+
+            subSelect.value = state.subclasse || '';
+        } else {
+            subWrapper.classList.add('hidden');
+        }
+    }
 
     // --- LOGIQUE DRUIDE : AFFICHAGE CONDITIONNEL ---
     const isDruid = state.classe && state.classe.toLowerCase().includes('druide');
-    
-    // Bouton de gestion sous le sac à dos
+
     const wsButton = document.getElementById('btn-wildshape-manager');
     if (wsButton) {
         isDruid ? wsButton.classList.remove('hidden') : wsButton.classList.add('hidden');
     }
-    
-    // Zone de sélection de transformation
+
     const transformationZone = document.getElementById('transformation-zone');
     if (transformationZone) {
         isDruid ? transformationZone.classList.remove('hidden') : transformationZone.classList.add('hidden');
     }
 
-    // --- LOGIQUE DE SUBSTITUTION (FORME SAUVAGE) ---
+    // --- LOGIQUE DE SUBSTITUTION (FORME SAUVAGE / TITAN) ---
     let displayStats = { ...state.stats };
     let displayAC = state.ac;
+    
+    let displaySpeed = parseFloat(state.speed) || 9;
+
     let displayHPCur = state.hp_cur;
     let displayHPMax = state.hp_max;
-    let displaySpeed = state.speed || 9;
+    let displayHPTemp = state.hp_temp || 0;
 
     if (state.isTransformed && state.activeShape) {
         const shape = state.activeShape;
-        displayStats.Force = shape.str;
-        displayStats.Dextérité = shape.dex;
-        displayStats.Constitution = shape.con;
-        
+
+        // Force & Dextérité : Meilleure valeur retenue
+        displayStats.Force = Math.max(state.stats.Force || 10, shape.str || 10);
+        displayStats.Dextérité = Math.max(state.stats.Dextérité || 10, shape.dex || 10);
+
+        // Constitution : Conserve TOUJOURS la stat de base du personnage
+        displayStats.Constitution = state.stats.Constitution || 10;
+
         displayAC = shape.ac;
-        displayHPCur = shape.hp; 
-        displayHPMax = shape.hp;
-        displaySpeed = shape.speed;
+
+        // Extraction numérique de la vitesse de la créature
+        if (shape.speed !== undefined && shape.speed !== null) {
+            const parsedSpeed = parseFloat(shape.speed.toString().replace(',', '.'));
+            if (!isNaN(parsedSpeed)) {
+                displaySpeed = parsedSpeed;
+            }
+        }
     }
 
     // --- 1. INPUTS DE BASE ---
@@ -56,6 +100,7 @@ export function renderAll(shouldSave = true) {
         'char-ac': displayAC,
         'hp-cur': displayHPCur,
         'hp-max': displayHPMax,
+        'hp-temp': displayHPTemp,
         'hd-cur': state.hd_cur,
         'gold-pp': state.money.pp,
         'gold-po': state.money.po,
@@ -68,6 +113,7 @@ export function renderAll(shouldSave = true) {
         if (el) el.value = val;
     }
 
+    // Affichage de la vitesse
     const speedEl = document.getElementById('speed');
     if (speedEl) speedEl.value = displaySpeed;
 
@@ -91,8 +137,12 @@ export function renderAll(shouldSave = true) {
             perceptionLevel = parseInt(state.m_skills["Perception"]) || 0;
         }
     }
-    const wisdomMod = getMod(state.stats.Sagesse || 10);
-    const passiveValue = 10 + wisdomMod + (perceptionLevel * p);
+    const wisdomMod = getMod(displayStats.Sagesse || 10);
+    let passiveValue = 10 + wisdomMod + (perceptionLevel * p);
+
+    if (state.isTransformed && state.activeShape?.passivePerception) {
+        passiveValue = Math.max(passiveValue, state.activeShape.passivePerception);
+    }
 
     const passiveEl = document.getElementById('passive-perception');
     if (passiveEl) passiveEl.innerText = passiveValue;
@@ -100,7 +150,7 @@ export function renderAll(shouldSave = true) {
     // --- 4. APPELS DES RENDUS DE LISTES ---
     if (window.updateHPUI) window.updateHPUI();
 
-    renderStatsList(displayStats); 
+    renderStatsList(displayStats);
     renderSavesList();
     renderSkillsList();
     renderAttaques();
@@ -118,8 +168,7 @@ export function renderAll(shouldSave = true) {
     renderInspiration();
     renderMountActions();
     renderBag();
-    
-    // Rendu spécifique au Druide
+
     if (isDruid) {
         renderTransformationButton();
         renderWildShapeList();
@@ -132,18 +181,18 @@ export function renderStatsList(overrideStats = null) {
     const container = document.getElementById('stats-area');
     // On utilise soit les stats passées en paramètre (le monstre), soit les stats du druide
     const statsToUse = overrideStats || window.state.stats;
-    
+
     if (!container || !statsToUse) return;
 
     container.innerHTML = statsOrder.map(k => {
         const v = statsToUse[k] || 10;
         const mod = getMod(v);
-        
+
         // --- LOGIQUE DRUIDE : FORME SAUVAGE ---
         // On vérifie si on doit mettre en avant les stats physiques (Force, Dex, Con)
         const isPhysical = ['Force', 'Dextérité', 'Constitution'].includes(k);
         const isTransformed = window.state.isTransformed && isPhysical;
-        
+
         // Classes CSS dynamiques
         const borderColor = isTransformed ? 'border-emerald-500/40' : 'border-zinc-800';
         const textColor = isTransformed ? 'text-emerald-400' : 'text-white';
@@ -173,16 +222,29 @@ export function renderSavesList() {
     if (!container || !state) return;
 
     const p = getProf();
-    // On calcule le bonus d'équipement une seule fois pour toute la liste
     const equipBonus = window.getInventorySaveBonus ? window.getInventorySaveBonus() : 0;
-    
     const statsOrder = ["Force", "Dextérité", "Constitution", "Intelligence", "Sagesse", "Charisme"];
+
+    // 1. Détermination des statistiques actives
+    const activeStats = { ...state.stats };
+
+    if (state.isTransformed && state.activeShape) {
+        const shape = state.activeShape;
+        activeStats.Force = Math.max(state.stats.Force || 10, shape.str || 10);
+        activeStats.Dextérité = Math.max(state.stats.Dextérité || 10, shape.dex || 10);
+
+        // CON : stat du perso si Titan, meilleure valeur sinon
+        if (shape.isTitan === true) {
+            activeStats.Constitution = state.stats.Constitution || 10;
+        } else {
+            activeStats.Constitution = Math.max(state.stats.Constitution || 10, shape.con || 10);
+        }
+    }
 
     container.innerHTML = statsOrder.map(s => {
         const isChecked = state.m_saves && state.m_saves.includes(s);
 
-        const baseMod = getMod(state.stats[s] || 10);
-        // Calcul final : Stat + Maîtrise + Équipement
+        const baseMod = getMod(activeStats[s] || 10);
         const totalMod = baseMod + (isChecked ? p : 0) + equipBonus;
 
         return `
@@ -212,11 +274,27 @@ export function renderSkillsList() {
     const p = getProf();
     const search = (document.getElementById('skill-search')?.value || "").toLowerCase();
 
-    // --- 1. Sécurité & Migration (Si m_skills est encore un tableau) ---
+    // --- 1. Sécurité & Migration ---
     if (Array.isArray(state.m_skills)) {
         const legacy = [...state.m_skills];
         state.m_skills = {};
         legacy.forEach(name => state.m_skills[name] = 1);
+    }
+
+    // 2. Détermination des statistiques actives
+    const activeStats = { ...state.stats };
+
+    if (state.isTransformed && state.activeShape) {
+        const shape = state.activeShape;
+        activeStats.Force = Math.max(state.stats.Force || 10, shape.str || 10);
+        activeStats.Dextérité = Math.max(state.stats.Dextérité || 10, shape.dex || 10);
+
+        // CON : stat du perso si Titan, meilleure valeur sinon
+        if (shape.isTitan === true) {
+            activeStats.Constitution = state.stats.Constitution || 10;
+        } else {
+            activeStats.Constitution = Math.max(state.stats.Constitution || 10, shape.con || 10);
+        }
     }
 
     const skills = SKILLS_LIST || [];
@@ -225,7 +303,8 @@ export function renderSkillsList() {
         .filter(s => s.n.toLowerCase().includes(search))
         .map(s => {
             const level = state.m_skills[s.n] || 0; // 0: rien, 1: Maîtrise, 2: Expertise
-            const baseStatMod = getMod(state.stats[s.s] || 10);
+            
+            const baseStatMod = getMod(activeStats[s.s] || 10);
             const totalMod = baseStatMod + (level * p);
 
             // --- 3. Gestion Visuelle ---
@@ -456,11 +535,47 @@ export function renderSpellsList() {
     const filterAction = document.getElementById('spell-filter-action')?.value || "all";
     const filterPreparedOnly = window.filterPreparedOnly || false;
 
+    // Détection robuste de la Forme Titan active
+    const isCurrentlyTitan = state.activeForm?.isTitan === true || state.isTitan === true;
+
     container.innerHTML = '';
     container.className = "space-y-6";
 
-    // Map pour garder l'index original malgré le filtrage/tri
-    let spellsWithIndexes = state.spells.map((spell, originalIndex) => ({
+    // 1. Récupération des sorts de Titan débloqués (UNIQUEMENT si sous-classe Titan)
+    const isTitanSubclass = state.subclasse && state.subclasse.toLowerCase().includes('titan');
+    const characterLevel = state.niveau || 1;
+    const unlockedTitanSpells = [];
+
+    if (isTitanSubclass && typeof TITAN_SPELLS_BY_LEVEL !== 'undefined') {
+        Object.keys(TITAN_SPELLS_BY_LEVEL).forEach(levelReq => {
+            if (characterLevel >= parseInt(levelReq, 10)) {
+                unlockedTitanSpells.push(...TITAN_SPELLS_BY_LEVEL[levelReq]);
+            }
+        });
+    }
+
+    // 2. Filtrage de sécurité : on copie la liste en purgeant tout sort de Titan si pas la sous-classe
+    let combinedSpells = state.spells
+        .filter(s => isTitanSubclass || !s.isTitanSpell)
+        .map(s => ({ ...s }));
+
+    // 3. Marquage / Injection des sorts de Titan
+    unlockedTitanSpells.forEach(titanSpell => {
+        const existingIndex = combinedSpells.findIndex(
+            s => s.nom.toLowerCase() === titanSpell.nom.toLowerCase()
+        );
+
+        if (existingIndex !== -1) {
+            // Si le sort existait déjà, on s'assure qu'il porte le flag isTitanSpell
+            combinedSpells[existingIndex].isTitanSpell = true;
+        } else {
+            // Sinon on l'ajoute
+            combinedSpells.push({ ...titanSpell, isTitanSpell: true });
+        }
+    });
+
+    // 4. Mappage des index originaux
+    let spellsWithIndexes = combinedSpells.map((spell, originalIndex) => ({
         ...spell,
         originalIndex: originalIndex
     }));
@@ -472,27 +587,23 @@ export function renderSpellsList() {
         .filter(s => filterRank === "all" || s.niveau.toString() === filterRank)
         .filter(s => filterAction === "all" || s.temps === filterAction);
 
-    // 1. Les Cantrips (Niveau 0)
+    // --- SEPARATION DES SECTIONS ---
     const cantrips = filtered.filter(s => s.niveau == 0);
-
-    // 2. Les Sorts Préparés (Niveau 1+)
     const preparedSpells = filtered.filter(s => s.niveau > 0 && s.prepare === true);
-
-    // 3. Le Grimoire (Niveau 1+ non préparés)
     const grimoireSpells = filtered.filter(s => s.niveau > 0 && s.prepare !== true)
         .sort((a, b) => a.niveau - b.niveau);
 
-    // --- RENDU DES SECTIONS ---
+    // --- RENDU ---
     if (cantrips.length > 0) {
-        renderSpellSection(container, "Sorts Mineurs (Cantrips)", cantrips, "text-amber-500");
+        renderSpellSection(container, "Sorts Mineurs (Cantrips)", cantrips, "text-amber-500", isCurrentlyTitan);
     }
 
     if (preparedSpells.length > 0) {
-        renderSpellSection(container, "Sorts Préparés", preparedSpells, "text-purple-500");
+        renderSpellSection(container, "Sorts Préparés", preparedSpells, "text-purple-500", isCurrentlyTitan);
     }
 
     if (grimoireSpells.length > 0 && !filterPreparedOnly) {
-        renderSpellSection(container, "Grimoire (Non préparés)", grimoireSpells, "text-zinc-600");
+        renderSpellSection(container, "Grimoire (Non préparés)", grimoireSpells, "text-zinc-600", isCurrentlyTitan);
     }
 }
 
@@ -709,8 +820,16 @@ export function renderPortrait() {
 
     if (!img || !placeholder) return;
 
-    if (state.portrait && state.portrait.trim() !== "") {
-        img.src = state.portrait;
+    // 1. On détermine quelle image utiliser : celle de la créature ou celle du personnage
+    let currentPortrait = state.portrait;
+
+    if (state.isTransformed && state.activeShape?.image) {
+        currentPortrait = state.activeShape.image;
+    }
+
+    // 2. Mise à jour de l'affichage
+    if (currentPortrait && currentPortrait.trim() !== "") {
+        img.src = currentPortrait;
         img.classList.remove('hidden');
         placeholder.classList.add('hidden');
     } else {
@@ -791,16 +910,16 @@ export function renderMount() {
     // 1. CHAMPS GÉNÉRAUX
     document.getElementById('mount-name').value = mount.name || "";
     document.getElementById('mount-ac').value = mount.ac || 10;
-    
+
     // PV (Nouveau format)
     document.getElementById('mount-hp-cur').value = mount.hp || 0;
     document.getElementById('mount-hp-max').value = mount.hpMax || 0;
 
     const speedData = window.state.mountData.speed;
     // 2. VITESSES (Nouveau format imbriqué)
-    const speeds = (typeof speedData === 'object' && speedData !== null) 
-    ? speedData 
-    : { sol: speedData || "0m", vol: "0m", nage: "0m", escalade: "0m" };
+    const speeds = (typeof speedData === 'object' && speedData !== null)
+        ? speedData
+        : { sol: speedData || "0m", vol: "0m", nage: "0m", escalade: "0m" };
 
     document.getElementById('mount-speed-sol').value = speeds.sol || "18m";
     document.getElementById('mount-speed-vol').value = speeds.vol || "0m";
@@ -812,7 +931,7 @@ export function renderMount() {
     stats.forEach(s => {
         const val = mount[s] || 10; // On garde la lecture à la racine si tu n'as pas migré dans mount.stats
         document.getElementById(`mount-${s}`).value = val;
-        
+
         // Calcul et affichage du bonus (+4, -1, etc.)
         const mod = Math.floor((val - 10) / 2);
         const modEl = document.getElementById(`mod-mount-${s}`);
@@ -826,7 +945,7 @@ export function renderMount() {
             if (el) el.value = val;
         });
     }
-    
+
     const perEl = document.getElementById('mount-perception-passive');
     if (perEl) perEl.value = mount.perceptionPassive || 10;
 
@@ -988,7 +1107,7 @@ export function renderBag() {
 
     const selector = document.getElementById('bag-type-selector');
     if (selector) {
-        selector.value = currentType; 
+        selector.value = currentType;
     }
 
     // --- 1. CALCUL DES SLOTS ---
@@ -1135,7 +1254,7 @@ export function renderBag() {
 /**
  * Fonction auxiliaire pour générer une section (Titre + Grille)
  */
-function renderSpellSection(parentContainer, title, spells, titleColorClass) {
+function renderSpellSection(parentContainer, title, spells, titleColorClass, isCurrentlyTitan = false) {
     const state = window.state;
     const section = document.createElement('div');
     section.className = "space-y-4";
@@ -1158,98 +1277,139 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
         const isOpened = state.openedDescs.includes(uniqueKey);
         const isPrepared = spell.prepare === true;
         const isCantrip = spell.niveau == 0;
-        const isConcentration = spell.concentration === true;
-        const isActiveCon = spell.isActiveCon === true; // Nouvel état
+        const isTitan = spell.isTitanSpell === true;
+
+        // Bloqué si le joueur est en forme Titan et que le sort n'est PAS un sort de Titan
+        const isDisabledByTitan = isCurrentlyTitan && !isTitan;
+
+        // Détection automatique de concentration
+        const isConcentration = spell.concentration === true || (typeof spell.duree === 'string' && spell.duree.toLowerCase().includes('concentration'));
+        const isActiveCon = spell.isActiveCon === true;
 
         const card = document.createElement('div');
 
-        // --- CONFIGURATION DRAG & DROP ---
-        card.draggable = true;
-        card.dataset.index = spell.originalIndex;
+        // --- CONFIGURATION DRAG & DROP (Désactivé en mode Titan) ---
+        if (!isDisabledByTitan) {
+            card.draggable = true;
+            card.dataset.index = spell.originalIndex;
 
-        card.ondragstart = (e) => {
-            e.dataTransfer.setData("text/plain", spell.originalIndex);
-            card.classList.add('opacity-50', 'scale-95');
-        };
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData("text/plain", spell.originalIndex);
+                card.classList.add('opacity-50', 'scale-95');
+            };
 
-        card.ondragend = () => {
-            card.classList.remove('opacity-50', 'scale-95');
-        };
+            card.ondragend = () => {
+                card.classList.remove('opacity-50', 'scale-95');
+            };
 
-        card.ondragover = (e) => {
-            e.preventDefault();
-            card.classList.add('border-purple-500');
-        };
+            card.ondragover = (e) => {
+                e.preventDefault();
+                card.classList.add('border-purple-500');
+            };
 
-        card.ondragleave = () => {
-            card.classList.remove('border-purple-500');
-        };
+            card.ondragleave = () => {
+                card.classList.remove('border-purple-500');
+            };
 
-        card.ondrop = (e) => {
-            e.preventDefault();
-            card.classList.remove('border-purple-500');
-            const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
-            const toIndex = spell.originalIndex;
+            card.ondrop = (e) => {
+                e.preventDefault();
+                card.classList.remove('border-purple-500');
+                const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+                const toIndex = spell.originalIndex;
 
-            if (fromIndex !== toIndex && window.reorderSpells) {
-                window.reorderSpells(fromIndex, toIndex);
-            }
-        };
+                if (fromIndex !== toIndex && window.reorderSpells) {
+                    window.reorderSpells(fromIndex, toIndex);
+                }
+            };
+        }
 
-        // --- STYLISATION DE LA BORDURE ET EFFET ACTIF ---
+        // --- STYLISATION DE LA BORDURE ET EFFETS ---
         let borderColor = 'border-zinc-800';
-        if (isCantrip) borderColor = 'border-amber-500/30';
+        if (isTitan) borderColor = 'border-amber-500/50 bg-amber-500/5';
+        else if (isCantrip) borderColor = 'border-amber-500/30';
         else if (isPrepared) borderColor = 'border-purple-500/30';
-        
-        // Si la concentration est active, on ajoute une lueur bleue
-        const activeEffect = isActiveCon 
-            ? 'ring-1 ring-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)] border-blue-500/50' 
+
+        // Lueur bleue si concentration active
+        const activeEffect = isActiveCon
+            ? 'ring-1 ring-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)] border-blue-500/50'
             : '';
 
-        card.className = `bg-zinc-900/40 border ${borderColor} ${activeEffect} rounded-xl p-3 hover:border-purple-500/50 transition-all cursor-pointer group relative h-fit`;
+        // Style pour griser/bloquer les sorts incompatibles
+        const titanDisabledStyle = isDisabledByTitan
+            ? 'opacity-40 grayscale pointer-events-none select-none cursor-not-allowed'
+            : 'hover:border-purple-500/50 cursor-pointer';
+
+        card.className = `bg-zinc-900/40 border ${borderColor} ${activeEffect} ${titanDisabledStyle} rounded-xl p-3 transition-all group relative h-fit`;
 
         card.onclick = (e) => {
+            if (isDisabledByTitan) return;
             if (e.target.closest('button')) return;
             if (window.toggleDesc) window.toggleDesc(uniqueKey);
         };
 
-        const prepButton = isCantrip ? '' : `
+        const prepButton = (isCantrip || isTitan || isDisabledByTitan) ? '' : `
             <button onclick="event.stopPropagation(); window.toggleSpellPreparation(${spell.originalIndex})" 
                 title="${isPrepared ? 'Désélectionner' : 'Préparer ce sort'}"
                 class="text-lg transition-all transform hover:scale-110 ${isPrepared ? 'grayscale-0 opacity-100' : 'grayscale opacity-20 hover:opacity-100'}">
                 📖
             </button>`;
 
+        // Traitement propre des composantes
+        let composantesText = 'Aucune';
+        if (typeof spell.composantes === 'string') {
+            composantesText = spell.composantes;
+        } else if (typeof spell.composantes === 'object' && spell.composantes !== null) {
+            composantesText = [
+                spell.composantes?.v ? 'V' : '',
+                spell.composantes?.s ? 'S' : '',
+                spell.composantes?.m ? 'M' : ''
+            ].filter(Boolean).join(', ') || 'Aucune';
+        }
+
         card.innerHTML = `
         <div class="flex justify-between items-start mb-3">
             <div class="flex items-center gap-3">
                 ${prepButton}
                 <div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <h4 class="text-[13px] font-black uppercase text-white tracking-wide">${spell.nom}</h4>
                         
-                        ${isConcentration ? `
+                        ${isTitan ? `
+                            <span class="px-1.5 py-0.5 text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded tracking-wider">
+                                ⚡ Titan
+                            </span>
+                        ` : ''}
+
+                        ${isDisabledByTitan ? `
+                            <span class="px-1.5 py-0.5 text-[9px] font-black uppercase bg-red-500/20 text-red-400 border border-red-500/30 rounded tracking-wider">
+                                🚫 Inutilisable
+                            </span>
+                        ` : ''}
+
+                        ${isConcentration && !isDisabledByTitan ? `
                             <button onclick="event.stopPropagation(); window.toggleActiveConcentration(${spell.originalIndex})" 
                                 class="flex items-center justify-center min-w-[18px] h-5 px-1 text-[10px] font-black rounded-md transition-all
-                                ${isActiveCon 
-                                    ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(37,99,235,0.6)] border border-blue-400' 
-                                    : 'bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-blue-500/50 hover:text-blue-400'}" 
+                                ${isActiveCon
+                    ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(37,99,235,0.6)] border border-blue-400'
+                    : 'bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-blue-500/50 hover:text-blue-400'}" 
                                 title="${isActiveCon ? 'Concentration active (cliquer pour arrêter)' : 'Cliquer pour marquer comme actif'}">
                                 C
                             </button>
                         ` : ''}
                     </div>
                     
-                    <span class="text-[10px] font-bold ${isCantrip ? 'text-amber-500' : 'text-purple-500'} uppercase tracking-widest">
+                    <span class="text-[10px] font-bold ${isTitan ? 'text-amber-400' : isCantrip ? 'text-amber-500' : 'text-purple-500'} uppercase tracking-widest">
                         ${isCantrip ? 'Cantrip' : 'Niveau ' + spell.niveau}
                     </span>
                 </div>
             </div>
             
-            <div class="flex gap-3 relative z-10">
-                <button onclick="event.stopPropagation(); window.openModal('spell', ${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
-                <button onclick="event.stopPropagation(); window.deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
-            </div>
+            ${(!isTitan && !isDisabledByTitan) ? `
+                <div class="flex gap-3 relative z-10">
+                    <button onclick="event.stopPropagation(); window.openModal('spell', ${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
+                    <button onclick="event.stopPropagation(); window.deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>
+                </div>
+            ` : ''}
         </div>
 
         <div class="flex flex-wrap gap-2 mb-3">
@@ -1268,7 +1428,7 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
             <div class="grid grid-cols-2 gap-y-3 gap-x-4 mb-4">
                 <div class="flex flex-col">
                     <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Cible / Zone</span>
-                    <span class="text-[11px] text-zinc-200 font-medium">${spell.cible || '—'}</span>
+                    <span class="text-[11px] text-zinc-200 font-medium">${spell.cible || spell.portee || '—'}</span>
                 </div>
                 <div class="flex flex-col">
                     <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Durée</span>
@@ -1276,19 +1436,13 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass) {
                 </div>
                 <div class="flex flex-col col-span-2">
                     <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter">Composantes</span>
-                    <span class="text-[11px] text-zinc-200 font-medium">
-                        ${[
-                spell.composantes?.v ? 'V' : '',
-                spell.composantes?.s ? 'S' : '',
-                spell.composantes?.m ? 'M' : ''
-            ].filter(Boolean).join(', ') || 'Aucune'}
-                    </span>
+                    <span class="text-[11px] text-zinc-200 font-medium">${composantesText}</span>
                 </div>
             </div>
 
             <div class="grid border-t border-zinc-800/50 pt-2">
                 <span class="text-[8px] uppercase text-zinc-500 font-black tracking-tighter mb-1">Description</span>
-                <span class="text-[11px] text-zinc-200 font-medium whitespace-pre-line">${spell.desc || '—'}</span>
+                <span class="text-[11px] text-zinc-200 font-medium whitespace-pre-line leading-relaxed">${spell.description || spell.desc || '—'}</span>
             </div>
         </div>
         `;
@@ -1332,27 +1486,41 @@ export function renderTransformationButton() {
     const container = document.getElementById('transformation-zone');
     if (!container) return;
 
+    const ws = window.state.wildShapeUses || { current: 2, max: 2 };
+
     if (window.state.isTransformed) {
         container.innerHTML = `
             <button onclick="window.toggleTransformation()" 
-                class="w-full py-3 bg-red-600 text-white rounded-xl font-black uppercase text-xs tracking-tighter shadow-lg animate-pulse">
+                class="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase text-xs tracking-wider shadow-lg animate-pulse transition">
                 Quitter la Forme Sauvage (${window.state.activeShape.nom})
             </button>`;
     } else {
-        const options = (window.state.wildShapes || []).map((s, i) => 
-            `<option value="${i}">${s.nom} (PV:${s.hp})</option>`
+        const options = (window.state.wildShapes || []).map((s, i) =>
+            `<option value="${i}">${s.nom} (CA: ${s.ac} | +${s.hpMult || 4}xNiv PV Temp)</option>`
         ).join('');
 
         container.innerHTML = `
-            <div class="flex gap-2">
-                <select id="ws-picker" class="flex-1 bg-zinc-800 text-white rounded-lg p-2 text-xs border border-emerald-500/30">
-                    <option value="">-- Choisir une forme --</option>
-                    ${options}
-                </select>
-                <button onclick="window.toggleTransformation(document.getElementById('ws-picker').value)" 
-                    class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px]">
-                    ✨ Transformer
-                </button>
+            <div class="flex flex-col gap-3.5">
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Utilisations :</span>
+                    <span class="text-xs font-black text-white bg-zinc-800 px-2.5 py-1 rounded-md border border-emerald-500/30">
+                        ${ws.current} / ${ws.max}
+                    </span>
+                </div>
+                
+                <!-- Layout adaptatif : empilé sur mobile, côte à côte sur tablette/desktop -->
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="ws-picker" class="w-full sm:flex-1 bg-zinc-900 text-white rounded-lg p-2.5 text-xs border border-emerald-500/30 focus:outline-none focus:border-emerald-500 truncate">
+                        <option value="">-- Choisir une forme --</option>
+                        ${options}
+                    </select>
+                    
+                    <button onclick="window.toggleTransformation(document.getElementById('ws-picker').value)" 
+                        class="w-full sm:w-auto shrink-0 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-40 text-white px-4 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-wider transition flex items-center justify-center gap-1.5 shadow-md"
+                        ${ws.current <= 0 ? 'disabled' : ''}>
+                        ✨ Transformer
+                    </button>
+                </div>
             </div>`;
     }
 }
@@ -1360,14 +1528,42 @@ export function renderTransformationButton() {
 export function renderWildShapeList() {
     const container = document.getElementById('wildshape-list-container');
     if (!container) return;
-    
-    container.innerHTML = (window.state.wildShapes || []).map((s, i) => `
-        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-            <div>
-                <p class="text-white font-bold text-xs uppercase">${s.nom}</p>
-                <p class="text-[9px] text-emerald-500 uppercase">PV: ${s.hp} | CA: ${s.ac} | FOR: ${s.str} | DEX: ${s.dex} | CON: ${s.con}</p>
+
+    // Masque/Affiche la case à cocher Titan selon la sous-classe actuelle
+    const isTitanSubclass = window.state?.subclasse?.toLowerCase().includes('titan');
+    const titanCheckboxWrapper = document.getElementById('ws-new-is-titan')?.closest('div');
+    if (titanCheckboxWrapper) {
+        if (isTitanSubclass) {
+            titanCheckboxWrapper.classList.remove('hidden');
+        } else {
+            titanCheckboxWrapper.classList.add('hidden');
+            const checkbox = document.getElementById('ws-new-is-titan');
+            if (checkbox) checkbox.checked = false;
+        }
+    }
+
+    container.innerHTML = (window.state.wildShapes || []).map((s, i) => {
+        // Miniature de la créature ou icône par défaut
+        const avatarHTML = s.image 
+            ? `<img src="${s.image}" class="w-8 h-8 rounded-lg object-cover border border-emerald-500/30 flex-shrink-0">` 
+            : `<div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 flex-shrink-0">🐾</div>`;
+
+        return `
+            <div class="flex justify-between items-center bg-white/5 p-2.5 rounded-lg border border-white/5 hover:border-white/10 transition gap-3">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    ${avatarHTML}
+                    <div class="truncate">
+                        <div class="flex items-center gap-1.5">
+                            <p class="text-white font-bold text-xs uppercase truncate">${s.nom}</p>
+                            ${s.isTitan ? `<span class="px-1.5 py-0.2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[8px] font-black rounded uppercase">Titan</span>` : ''}
+                        </div>
+                        <p class="text-[9px] text-emerald-400 uppercase tracking-wide truncate">
+                            CA: ${s.ac} | FOR: ${s.str} | DEX: ${s.dex} | CON: ${s.con} | PV TEMP: +${(s.hpMult || 4)}xNiv
+                        </p>
+                    </div>
+                </div>
+                <button onclick="window.deleteWildShape(${i})" class="text-red-500/50 hover:text-red-400 text-xs px-2 py-1 rounded transition flex-shrink-0" title="Supprimer">✕</button>
             </div>
-            <button onclick="window.deleteWildShape(${i})" class="text-red-500/50 hover:text-red-500 text-xs">✕</button>
-        </div>
-    `).join('');
-};
+        `;
+    }).join('');
+}

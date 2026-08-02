@@ -1,9 +1,9 @@
-export const APP_VERSION = "3.1.1";
+export const APP_VERSION = "4.0";
 
 export function getInitialState() {
     return {
-        nom: "Nouveau Héros", race: "Humain", classe: "Barbare", niveau: 1,
-        hp_cur: 10, hp_max: 10, hd_cur: 1, maxWeight: 14, ac: 10, speed: 9,
+        nom: "Nouveau Héros", race: "Humain", classe: "Barbare", subclasse: "", niveau: 1,
+        hp_cur: 10, hp_max: 10, hp_temp: 0, hd_cur: 1, maxWeight: 14, ac: 10, speed: 9,
         stats: { Force: 10, Dextérité: 10, Constitution: 10, Intelligence: 10, Sagesse: 10, Charisme: 10 },
         m_saves: [], m_skills: {}, attaques: [], capacites: [], spells: [],
         spellSlots: { 
@@ -38,9 +38,14 @@ export function getInitialState() {
             attacks: [],
             skills: []
         },
-        wildShapes: [], // Liste des monstres enregistrés
-        isTransformed: false, // État actuel
-        activeShapeIndex: null // Index de la forme utilisée
+        // --- SYSTÈME FORME SAUVAGE (D&D 2024) ---
+        wildShapes: [],          // Liste des créatures configurées
+        isTransformed: false,    // Statut de transformation
+        activeShape: null,       // Créature actuellement active
+        wildShapeUses: {         // Ressources d'utilisations (2 par défaut)
+            current: 2,
+            max: 2
+        }
     };
 }
 
