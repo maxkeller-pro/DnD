@@ -167,6 +167,101 @@ export function switchTab(t) {
     if (activeBtn) activeBtn.classList.add('active');
 }
 
+export function saveData() {
+    const typeEl = document.getElementById('m-type');
+    const indexEl = document.getElementById('m-index');
+    if (!typeEl || !indexEl) return;
+
+    const type = typeEl.value;
+    const index = parseInt(indexEl.value);
+    const state = window.state;
+
+    if (!state.mountData) {
+        state.mountData = { name: "", image: "", inventoryLeft: [], inventoryRight: [], attacks: [], skills: [] };
+    }
+
+    let targetArray = null;
+    let data = {
+        nom: document.getElementById('m-name')?.value || "",
+        desc: document.getElementById('m-desc')?.value || ""
+    };
+
+    // --- 1. RÉCUPÉRATION SELON LE TYPE DE MODALE ---
+    if (type === 'attack' || type === 'mount-attack') {
+        data = {
+            ...data,
+            stat: document.getElementById('m-atk-stat')?.value || "Force",
+            prof: document.getElementById('m-atk-prof')?.checked || false,
+            dice: document.getElementById('m-atk-dice')?.value || "1d6",
+            damageType: document.getElementById('m-atk-type')?.value || "tranchant",
+            hasSecondary: document.getElementById('m-atk-has-secondary')?.checked || false,
+            dice2: document.getElementById('m-atk-dice2')?.value || "",
+            damageType2: document.getElementById('m-atk-type2')?.value || "",
+            misc: parseInt(document.getElementById('m-atk-misc')?.value) || 0
+        };
+        targetArray = (type === 'attack') ? state.attaques : state.mountData.attacks;
+    } 
+    else if (type === 'skill' || type === 'mount-skill') {
+        const useProfValue = document.getElementById('m-skill-use-prof')?.checked || false;
+        const maxVal = useProfValue ? -1 : (parseInt(document.getElementById('m-skill-max')?.value) || 0);
+        const oldArray = (type === 'skill') ? state.capacites : state.mountData.skills;
+        const currentVal = (index === -1) ? (useProfValue ? 2 : maxVal) : (oldArray[index]?.current || 0);
+
+        data = {
+            ...data,
+            max: maxVal,
+            current: currentVal,
+            useProf: useProfValue,
+            reset: document.getElementById('m-skill-reset')?.value || "long"
+        };
+        targetArray = (type === 'skill') ? state.capacites : state.mountData.skills;
+    } 
+    else if (type === 'spell') {
+        data = {
+            ...data,
+            niveau: parseInt(document.getElementById('m-spell-rank')?.value) || 0,
+            ecole: document.getElementById('m-spell-school')?.value || 'évocation',
+            temps: document.getElementById('spell-action-type')?.value || 'action',
+            portee: document.getElementById('m-spell-range')?.value || '',
+            cible: document.getElementById('m-spell-target')?.value || '',
+            duree: document.getElementById('m-spell-duration')?.value || '',
+            incantation: document.getElementById('m-spell-incantation')?.value || '',
+            concentration: document.getElementById('m-spell-concentration')?.checked || false,
+            composantes: {
+                v: document.getElementById('comp-v')?.checked || false,
+                s: document.getElementById('comp-s')?.checked || false,
+                m: document.getElementById('comp-m')?.checked || false
+            },
+            prepare: index === -1 ? true : (state.spells[index]?.prepare || false)
+        };
+        targetArray = state.spells;
+    } 
+    else if (type === 'item' || type === 'mount-item-left' || type === 'mount-item-right') {
+        data = {
+            ...data,
+            weight: parseFloat(document.getElementById('item-weight')?.value) || 0,
+            qty: parseInt(document.getElementById('item-qty')?.value) || 1
+        };
+        if (type === 'item') targetArray = state.inventaire;
+        else if (type === 'mount-item-left') targetArray = state.mountData.inventoryLeft;
+        else if (type === 'mount-item-right') targetArray = state.mountData.inventoryRight;
+    }
+
+    // --- 2. ENREGISTREMENT ---
+    if (targetArray) {
+        if (index === -1) {
+            targetArray.push(data);
+        } else {
+            targetArray[index] = data;
+        }
+    }
+
+    // --- 3. FERMETURE ET MAJ ---
+    closeModal();
+    indexEl.value = "-99";
+    if (typeof window.renderAll === 'function') window.renderAll(true);
+}
+
 function resetAllFields() {
     // Champs communs
     document.getElementById('m-name').value = "";
