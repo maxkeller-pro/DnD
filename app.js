@@ -1,9 +1,9 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
+import { renderAll, updateSubclassLangButtons, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab, saveData } from './js/ui-modals.js';
-import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney, SUBCLASSES_BY_CLASS, TITAN_SPELLS_BY_LEVEL } from './js/utils.js';
+import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney, SUBCLASSES_BY_CLASS, translateSubclass, TITAN_SPELLS_BY_LEVEL } from './js/utils.js';
 import { getEffectiveSkillsAndSaves } from './js/wildshape.js';
 
 // --- DONNÉES DE RÉFÉRENCE & ÉTAT GLOBAL ---
@@ -37,7 +37,7 @@ window.calculateSpellStats = function() {
     const mastery = Math.ceil(1 + (s.niveau / 4));
 
     let castingStat = "Charisme"; 
-    if (s.classe === "Magicien") castingStat = "Intelligence";
+    if (s.classe === "Magicien" || s.classe === "Roublard") castingStat = "Intelligence";
     if (s.classe === "Clerc" || s.classe === "Druide" || s.classe === "Rôdeur") castingStat = "Sagesse";
 
     const statValue = s.stats[castingStat] || 10;
@@ -458,9 +458,9 @@ window.handleImageUpload = function(input) {
     }
 };
 
-// --- GRIMOIRE & SORTS ---
-
 window.deleteSpell = (index) => {
+    if (!window.state || !Array.isArray(window.state.spells)) return;
+    if (index < 0 || index >= window.state.spells.length) return;
     window.state.spells.splice(index, 1);
     renderSpellsList();
     saveToSupabase();
@@ -531,15 +531,15 @@ window.openPrepModal = () => {
     
     container.innerHTML = '';
     
-    let filteredSpells = [...window.state.spells];
+    let filteredSpells = [...(window.state.spells || []).filter(Boolean)];
     if (currentPrepFilter !== 'all') {
-        filteredSpells = filteredSpells.filter(s => s.niveau.toString() === currentPrepFilter);
+        filteredSpells = filteredSpells.filter(s => s && s.niveau && s.niveau.toString() === currentPrepFilter);
     }
     
-    filteredSpells.sort((a, b) => a.niveau - b.niveau || a.nom.localeCompare(b.nom));
+    filteredSpells.sort((a, b) => (a.niveau || 0) - (b.niveau || 0) || (a.nom || '').localeCompare(b.nom || ''));
     
     filteredSpells.forEach((spell) => {
-        const realIndex = window.state.spells.findIndex(s => s.nom === spell.nom);
+        const realIndex = window.state.spells.findIndex(s => s && s.nom === spell.nom);
         const isPrepared = spell.prepare === true;
         
         const row = document.createElement('div');
@@ -563,15 +563,17 @@ window.openPrepModal = () => {
         container.appendChild(row);
     });
     
-    const totalPrepared = window.state.spells.filter(s => s.prepare).length;
+    const totalPrepared = (window.state.spells || []).filter(s => s && s.prepare).length;
     if (counter) counter.innerText = `${totalPrepared} sort${totalPrepared > 1 ? 's' : ''} préparé${totalPrepared > 1 ? 's' : ''}`;
     
     document.getElementById('modal-prep-spells')?.classList.remove('hidden');
 };
 
 window.toggleSpellPrepInList = (index) => {
-    window.state.spells[index].prepare = !window.state.spells[index].prepare;
-    openPrepModal();
+    if (index >= 0 && window.state.spells && window.state.spells[index]) {
+        window.state.spells[index].prepare = !window.state.spells[index].prepare;
+        openPrepModal();
+    }
 };
 
 window.closePrepModal = () => {
@@ -581,6 +583,7 @@ window.closePrepModal = () => {
 };
 
 window.editSpell = function(index) {
+    if (index < 0 || !window.state.spells || !window.state.spells[index]) return;
     const s = window.state.spells[index];
     
     document.getElementById('m-name').value = s.nom || "";
@@ -611,32 +614,47 @@ window.editSpell = function(index) {
     document.getElementById('modal-ui')?.classList.remove('hidden');
 };
 
-window.toggleActiveConcentration = function(spellIndex) {
+window.toggleActiveConcentration = function(spellIndex, spellNom = "") {
     const state = window.state;
-    const spell = state.spells[spellIndex];
+    if (!state) return;
 
-    if (!spell.concentration) return;
+    const spell = (spellIndex >= 0 && state.spells) ? state.spells[spellIndex] : null;
+    const targetNom = spellNom || spell?.nom || "";
 
-    state.spells.forEach((s, idx) => {
-        if (idx !== spellIndex) s.isActiveCon = false;
-    });
-    
-    spell.isActiveCon = !spell.isActiveCon;
+    const wasActive = (spell && spell.isActiveCon) || (targetNom && state.activeConcentration === targetNom);
+
+    if (Array.isArray(state.spells)) {
+        state.spells.forEach(s => { if (s) s.isActiveCon = false; });
+    }
+
+    if (wasActive) {
+        state.activeConcentration = null;
+    } else {
+        state.activeConcentration = targetNom;
+        if (spell) spell.isActiveCon = true;
+    }
+
     renderAll(); 
 };
 
 window.toggleSpellPreparation = (originalIndex) => {
-    const spell = window.state.spells[originalIndex];
-    spell.prepare = !spell.prepare;
-    renderSpellsList();
-    saveToSupabase();
+    if (originalIndex >= 0 && window.state.spells && window.state.spells[originalIndex]) {
+        window.state.spells[originalIndex].prepare = !window.state.spells[originalIndex].prepare;
+        renderSpellsList();
+        saveToSupabase();
+    }
 };
 
 window.reorderSpells = (fromIndex, toIndex) => {
+    if (!window.state || !Array.isArray(window.state.spells)) return;
+    if (fromIndex < 0 || fromIndex >= window.state.spells.length) return;
+    if (toIndex < 0 || toIndex >= window.state.spells.length) return;
     const movedSpell = window.state.spells.splice(fromIndex, 1)[0];
-    window.state.spells.splice(toIndex, 0, movedSpell);
-    renderSpellsList();
-    saveToSupabase();
+    if (movedSpell) {
+        window.state.spells.splice(toIndex, 0, movedSpell);
+        renderSpellsList();
+        saveToSupabase();
+    }
 };
 
 // --- SYSTÈME DE FORME SAUVAGE ---
@@ -769,11 +787,11 @@ window.syncTitanSpells = function() {
     const state = window.state;
     if (!state) return;
 
-    const isTitanCircle = state.classe?.toLowerCase().includes('druide') && state.subclasse === "Cercle des titans";
+    const isTitanCircle = state.classe?.toLowerCase().includes('druide') && state.subclasse?.toLowerCase().includes('titan');
     
     // Si pas Druide des Titans, on retire les sorts de titan injectés automatiquement
     if (!isTitanCircle) {
-        state.spells = state.spells.filter(s => !s.isTitanSpell);
+        state.spells = (state.spells || []).filter(s => s && !s.isTitanSpell);
         return;
     }
 
@@ -783,7 +801,7 @@ window.syncTitanSpells = function() {
     Object.keys(TITAN_SPELLS_BY_LEVEL).forEach(reqLevel => {
         if (druidLevel >= parseInt(reqLevel)) {
             TITAN_SPELLS_BY_LEVEL[reqLevel].forEach(titanSpell => {
-                const alreadyHas = state.spells.some(s => s.nom === titanSpell.nom);
+                const alreadyHas = state.spells.some(s => s && s.nom === titanSpell.nom);
                 if (!alreadyHas) {
                     state.spells.push({ ...titanSpell });
                 }
@@ -920,16 +938,24 @@ window.takeRest = function(type) {
 
     window.state.wildShapeUses = ws;
 
-    // Réinitialisation des autres capacités
-    window.state.capacites.forEach(c => {
-        const effectiveMax = c.useProf ? p : (parseInt(c.max) || 0);
-        if (effectiveMax > 0) {
-            if (type === 'long' || c.reset === 'court') c.current = effectiveMax;
-        }
-    });
+    // Réinitialisation des capacités selon leur type de recharge
+    if (Array.isArray(window.state.capacites)) {
+        window.state.capacites.forEach(c => {
+            // Ignorer si la recharge est "aucun" ou non définie
+            if (!c.reset || c.reset === 'none') return;
+
+            const effectiveMax = c.useProf ? p : (parseInt(c.max) || 0);
+            if (effectiveMax > 0) {
+                // Le Repos Long recharge les types 'long' et 'court'
+                // Le Repos Court recharge uniquement les types 'court'
+                if (type === 'long' || c.reset === 'court') {
+                    c.current = effectiveMax;
+                }
+            }
+        });
+    }
 
     renderAll();
-    saveToSupabase();
 };
 
 window.updateLevel = function(v) {
@@ -1116,7 +1142,7 @@ window.onClassChange = function(newClass) {
 
         // Purge des sorts de Titan enregistrés
         if (Array.isArray(state.spells)) {
-            state.spells = state.spells.filter(s => !s.isTitanSpell);
+            state.spells = state.spells.filter(s => s && !s.isTitanSpell);
         }
 
         // Reset de la valeur de l'input HTML de la sous-classe
@@ -1162,12 +1188,50 @@ window.onSubclassChange = function(newSubclass) {
     // 2. Si on choisit autre chose que le Cercle des Titans, on nettoie les sorts de Titan
     const isTitan = newSubclass && newSubclass.toLowerCase().includes('titan');
     if (!isTitan && Array.isArray(state.spells)) {
-        state.spells = state.spells.filter(s => !s.isTitanSpell);
+        state.spells = state.spells.filter(s => s && !s.isTitanSpell);
     }
 
     // 3. Re-rendu complet immédiat (déclenche renderSpellsList et charge les sorts quel que soit le niveau)
     if (typeof renderAll === 'function') {
         renderAll(true);
+    }
+};
+
+window.setGlobalLanguage = function(lang) {
+    const newLang = (lang || 'FR').toUpperCase();
+    
+    // 1. Sauvegarde la préférence dans le localStorage du navigateur
+    localStorage.setItem('dnd_app_lang', newLang);
+
+    // 2. Met à jour l'état visuel des boutons FR / EN
+    const btnFr = document.getElementById('btn-global-lang-fr');
+    const btnEn = document.getElementById('btn-global-lang-en');
+
+    if (btnFr && btnEn) {
+        if (newLang === 'FR') {
+            btnFr.className = "px-2.5 py-1 rounded transition bg-emerald-600 text-white font-black";
+            btnEn.className = "px-2.5 py-1 rounded transition text-zinc-400 hover:text-white font-bold";
+        } else {
+            btnEn.className = "px-2.5 py-1 rounded transition bg-emerald-600 text-white font-black";
+            btnFr.className = "px-2.5 py-1 rounded transition text-zinc-400 hover:text-white font-bold";
+        }
+    }
+
+    // 3. Si un personnage est actuellement chargé, traduis la sous-classe
+    if (window.state) {
+        window.state.lang = newLang; // Optionnel : enregistre la langue dans le state du perso
+        
+        if (window.state.subclasse && typeof translateSubclass === 'function') {
+            const translated = translateSubclass(window.state.subclasse, newLang);
+            if (translated && translated !== window.state.subclasse) {
+                window.state.subclasse = translated;
+            }
+        }
+    }
+
+    // 4. Relance le rendu de l'interface
+    if (typeof window.renderAll === 'function') {
+        window.renderAll(true);
     }
 };
 
@@ -1186,27 +1250,42 @@ window.backToSelection = async function() {
     if (isBackingToSelection) return;
     isBackingToSelection = true;
     
+    const loader = document.getElementById('global-loader');
+
     try {
-        document.body.style.cursor = 'wait';
-        if (window.currentCharacterId) await saveToSupabase();
-        
+        // 1. Afficher immédiatement le loader
+        if (loader) loader.classList.remove('hidden');
+
+        // 2. Masquer la fiche tout de suite
+        document.getElementById('app')?.classList.add('hidden');
+
+        // 3. Lancer la sauvegarde en arrière-plan
+        const savePromise = window.currentCharacterId ? saveToSupabase() : Promise.resolve();
+
+        // 4. Réinitialiser le state et l'ID du personnage actif
         window.state = getInitialState(); 
-        
+        window.currentCharacterId = null;
+
+        // Vider le DOM lourd
         const containers = ['spells-list', 'attacks-list', 'inventory-list', 'capacites-list'];
         containers.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = '';
         });
 
-        window.currentCharacterId = null;
-        document.getElementById('app')?.classList.add('hidden');
-        await loadCharactersList();
-        
         window.scrollTo(0, 0);
+
+        // 5. Charger et rendre la liste des personnages
+        await loadCharactersList();
+
+        // 6. S'assurer que la sauvegarde s'est bien achevée
+        await savePromise;
+
     } catch (error) {
         console.error("Erreur lors du retour :", error);
     } finally {
-        document.body.style.cursor = 'default';
+        // 7. Cacher le loader une fois que tout est prêt
+        if (loader) loader.classList.add('hidden');
         isBackingToSelection = false;
     }
 };
@@ -1219,6 +1298,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const appVersionEl = document.getElementById('app-version');
     if (appVersionEl) appVersionEl.innerText = `v${APP_VERSION}`;
+
+    const savedLang = localStorage.getItem('dnd_app_lang') || 'FR';
+    window.setGlobalLanguage(savedLang);
     
     checkUser(loadCharactersList);
 });
@@ -1247,7 +1329,6 @@ window.loadCharactersList = loadCharactersList;
 window.createNewCharacter = createNewCharacter;
 window.selectCharacter = selectCharacter;
 window.deleteCharacter = deleteCharacter;
-window.backToSelection = backToSelection;
 
 // Rendu des composantes
 window.renderStatsList = renderStatsList;

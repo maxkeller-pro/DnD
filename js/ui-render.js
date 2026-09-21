@@ -1,6 +1,22 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, SUBCLASSES_BY_CLASS, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, SUBCLASSES_BY_CLASS, SUBCLASSES_BY_LANG, getSubclassesByClass, translateSubclass, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
 import { saveToSupabase } from './api.js';
+
+export function updateSubclassLangButtons(currentLang) {
+    const lang = (currentLang || window.state?.subclassLang || (typeof localStorage !== 'undefined' ? localStorage.getItem('dnd_subclass_lang') : null) || 'FR').toUpperCase();
+    const btnFR = document.getElementById('btn-subclass-lang-fr');
+    const btnEN = document.getElementById('btn-subclass-lang-en');
+
+    if (btnFR && btnEN) {
+        if (lang === 'EN') {
+            btnEN.className = "px-1.5 py-0.5 rounded transition bg-amber-500 text-black font-black";
+            btnFR.className = "px-1.5 py-0.5 rounded transition text-amber-400/70 hover:text-amber-300 font-bold";
+        } else {
+            btnFR.className = "px-1.5 py-0.5 rounded transition bg-amber-500 text-black font-black";
+            btnEN.className = "px-1.5 py-0.5 rounded transition text-amber-400/70 hover:text-amber-300 font-bold";
+        }
+    }
+}
 
 /**
  * Fonction maîtresse qui rafraîchit l'intégralité de la fiche
@@ -14,7 +30,6 @@ export function renderAll(shouldSave = true) {
     const p = getProf();
     const level = parseInt(state.niveau) || 1;
 
-    // --- LOGIQUE SOUS-CLASSE (NIVEAU >= 3) ---
     const subWrapper = document.getElementById('subclass-wrapper');
     const subSelect = document.getElementById('char-subclass');
 
@@ -22,17 +37,43 @@ export function renderAll(shouldSave = true) {
         if (level >= 3) {
             subWrapper.classList.remove('hidden');
 
-            const currentClass = state.classe || "Barbare";
-            const availableSubclasses = SUBCLASSES_BY_CLASS[currentClass] || [];
+            // 1. Détermination de la classe cible
+            let targetClass = "Barbare";
 
+            if(state.classe){
+                targetClass = state.classe;
+            } else {
+                const eligibleClass = state.classes.find(c => (parseInt(c.level) || 0) >= 3);
+                targetClass = eligibleClass ? eligibleClass.name : state.classes[0].name;
+            }
+
+            // 2. Langue globale
+            const currentLang = (state.lang || (typeof localStorage !== 'undefined' ? localStorage.getItem('dnd_app_lang') : null) || 'FR').toUpperCase();
+
+            updateSubclassLangButtons(currentLang);
+
+            // 3. Récupération des sous-classes DÉJÀ TRADUITES pour le menu déroulant
+            const availableSubclasses = getSubclassesByClass(targetClass, currentLang);
+
+            // 4. Traduction / Alignement de la valeur enregistrée dans state.subclasse
+            if (state.subclasse) {
+                const translated = translateSubclass(state.subclasse, currentLang);
+                if (availableSubclasses.some(s => s.toLowerCase() === translated.toLowerCase())) {
+                    state.subclasse = translated;
+                }
+            }
+
+            // 5. Génération des options du select (dans la bonne langue)
             let optionsHTML = `<option value="">-- Sélectionner --</option>`;
-            optionsHTML += availableSubclasses.map(sub =>
-                `<option value="${sub}" ${state.subclasse === sub ? 'selected' : ''} class="bg-zinc-900 text-amber-300">${sub}</option>`
-            ).join('');
+            optionsHTML += availableSubclasses.map(sub => {
+                const isSelected = state.subclasse && state.subclasse.toLowerCase() === sub.toLowerCase();
+                return `<option value="${sub}" ${isSelected ? 'selected' : ''} class="bg-zinc-900 text-amber-300">${sub}</option>`;
+            }).join('');
 
             subSelect.innerHTML = optionsHTML;
 
-            if (state.subclasse && !availableSubclasses.includes(state.subclasse)) {
+            // Option personnalisée si hors liste
+            if (state.subclasse && !availableSubclasses.some(s => s.toLowerCase() === state.subclasse.toLowerCase())) {
                 const customOption = document.createElement('option');
                 customOption.value = state.subclasse;
                 customOption.innerText = state.subclasse;
@@ -554,44 +595,48 @@ export function renderSpellsList() {
         });
     }
 
-    // 2. Filtrage de sécurité : on copie la liste en purgeant tout sort de Titan si pas la sous-classe
-    let combinedSpells = state.spells
-        .filter(s => isTitanSubclass || !s.isTitanSpell)
-        .map(s => ({ ...s }));
+    // 2. Filtrage de sécurité : on copie la liste en purgeant tout sort de Titan si pas la sous-classe,
+    // tout en conservant l'index exact d'origine dans state.spells
+    let combinedSpells = [];
+    (state.spells || []).forEach((s, realIndex) => {
+        if (!s) return;
+        if (isTitanSubclass || !s.isTitanSpell) {
+            combinedSpells.push({
+                ...s,
+                originalIndex: realIndex
+            });
+        }
+    });
 
     // 3. Marquage / Injection des sorts de Titan
     unlockedTitanSpells.forEach(titanSpell => {
         const existingIndex = combinedSpells.findIndex(
-            s => s.nom.toLowerCase() === titanSpell.nom.toLowerCase()
+            s => s && s.nom && s.nom.toLowerCase() === titanSpell.nom.toLowerCase()
         );
 
         if (existingIndex !== -1) {
             // Si le sort existait déjà, on s'assure qu'il porte le flag isTitanSpell
             combinedSpells[existingIndex].isTitanSpell = true;
         } else {
-            // Sinon on l'ajoute
-            combinedSpells.push({ ...titanSpell, isTitanSpell: true });
+            // Sinon on l'ajoute comme sort de Titan débloqué (virtuel, originalIndex = -1)
+            combinedSpells.push({ ...titanSpell, isTitanSpell: true, originalIndex: -1 });
         }
     });
 
-    // 4. Mappage des index originaux
-    let spellsWithIndexes = combinedSpells.map((spell, originalIndex) => ({
-        ...spell,
-        originalIndex: originalIndex
-    }));
+    let spellsWithIndexes = combinedSpells;
 
     if (!state.openedDescs) state.openedDescs = [];
 
     let filtered = spellsWithIndexes
-        .filter(s => s.nom.toLowerCase().includes(searchTerm))
-        .filter(s => filterRank === "all" || s.niveau.toString() === filterRank)
+        .filter(s => s && s.nom && s.nom.toLowerCase().includes(searchTerm))
+        .filter(s => filterRank === "all" || (s.niveau != null && s.niveau.toString() === filterRank))
         .filter(s => filterAction === "all" || s.temps === filterAction);
 
     // --- SEPARATION DES SECTIONS ---
-    const cantrips = filtered.filter(s => s.niveau == 0);
-    const preparedSpells = filtered.filter(s => s.niveau > 0 && s.prepare === true);
-    const grimoireSpells = filtered.filter(s => s.niveau > 0 && s.prepare !== true)
-        .sort((a, b) => a.niveau - b.niveau);
+    const cantrips = filtered.filter(s => s && s.niveau == 0);
+    const preparedSpells = filtered.filter(s => s && s.niveau > 0 && s.prepare === true);
+    const grimoireSpells = filtered.filter(s => s && s.niveau > 0 && s.prepare !== true)
+        .sort((a, b) => (a.niveau || 0) - (b.niveau || 0));
 
     // --- RENDU ---
     if (cantrips.length > 0) {
@@ -1273,7 +1318,9 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
     grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3 items-start";
 
     spells.forEach(spell => {
-        const uniqueKey = `spell-${spell.originalIndex}`;
+        const uniqueKey = spell.originalIndex !== -1 
+            ? `spell-${spell.originalIndex}` 
+            : `spell-titan-${(spell.nom || '').toLowerCase().replace(/\s+/g, '-')}`;
         const isOpened = state.openedDescs.includes(uniqueKey);
         const isPrepared = spell.prepare === true;
         const isCantrip = spell.niveau == 0;
@@ -1284,12 +1331,12 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
 
         // Détection automatique de concentration
         const isConcentration = spell.concentration === true || (typeof spell.duree === 'string' && spell.duree.toLowerCase().includes('concentration'));
-        const isActiveCon = spell.isActiveCon === true;
+        const isActiveCon = spell.isActiveCon === true || (state.activeConcentration && state.activeConcentration === spell.nom);
 
         const card = document.createElement('div');
 
-        // --- CONFIGURATION DRAG & DROP (Désactivé en mode Titan) ---
-        if (!isDisabledByTitan) {
+        // --- CONFIGURATION DRAG & DROP (Désactivé pour les sorts de Titan, virtuels ou en mode Titan) ---
+        if (!isDisabledByTitan && !isTitan && spell.originalIndex !== -1) {
             card.draggable = true;
             card.dataset.index = spell.originalIndex;
 
@@ -1314,10 +1361,10 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
             card.ondrop = (e) => {
                 e.preventDefault();
                 card.classList.remove('border-purple-500');
-                const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+                const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
                 const toIndex = spell.originalIndex;
 
-                if (fromIndex !== toIndex && window.reorderSpells) {
+                if (!isNaN(fromIndex) && toIndex !== -1 && fromIndex !== toIndex && window.reorderSpells) {
                     window.reorderSpells(fromIndex, toIndex);
                 }
             };
@@ -1347,7 +1394,7 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
             if (window.toggleDesc) window.toggleDesc(uniqueKey);
         };
 
-        const prepButton = (isCantrip || isTitan || isDisabledByTitan) ? '' : `
+        const prepButton = (isCantrip || isTitan || isDisabledByTitan || spell.originalIndex === -1) ? '' : `
             <button onclick="event.stopPropagation(); window.toggleSpellPreparation(${spell.originalIndex})" 
                 title="${isPrepared ? 'Désélectionner' : 'Préparer ce sort'}"
                 class="text-lg transition-all transform hover:scale-110 ${isPrepared ? 'grayscale-0 opacity-100' : 'grayscale opacity-20 hover:opacity-100'}">
@@ -1387,7 +1434,7 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
                         ` : ''}
 
                         ${isConcentration && !isDisabledByTitan ? `
-                            <button onclick="event.stopPropagation(); window.toggleActiveConcentration(${spell.originalIndex})" 
+                            <button onclick="event.stopPropagation(); window.toggleActiveConcentration(${spell.originalIndex}, '${(spell.nom || '').replace(/'/g, "\\'")}')" 
                                 class="flex items-center justify-center min-w-[18px] h-5 px-1 text-[10px] font-black rounded-md transition-all
                                 ${isActiveCon
                     ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(37,99,235,0.6)] border border-blue-400'
@@ -1404,7 +1451,7 @@ function renderSpellSection(parentContainer, title, spells, titleColorClass, isC
                 </div>
             </div>
             
-            ${(!isTitan && !isDisabledByTitan) ? `
+            ${(!isTitan && !isDisabledByTitan && spell.originalIndex !== -1) ? `
                 <div class="flex gap-3 relative z-10">
                     <button onclick="event.stopPropagation(); window.openModal('spell', ${spell.originalIndex})" class="text-zinc-500 hover:text-white text-[12px] p-1">✎</button>
                     <button onclick="event.stopPropagation(); window.deleteSpell(${spell.originalIndex})" class="text-zinc-500 hover:text-red-500 text-[12px] p-1">✕</button>

@@ -1,3 +1,7 @@
+import { SUBCLASSES_TRANSLATIONS, translateSubclass } from './translations.js';
+
+export { SUBCLASSES_TRANSLATIONS, translateSubclass };
+
 export const SKILLS_LIST = [
     { n: "Athlétisme", s: "Force" }, { n: "Acrobaties", s: "Dextérité" }, { n: "Escamotage", s: "Dextérité" }, { n: "Discrétion", s: "Dextérité" },
     { n: "Arcanes", s: "Intelligence" }, { n: "Histoire", s: "Intelligence" }, { n: "Investigation", s: "Intelligence" }, { n: "Nature", s: "Intelligence" }, { n: "Religion", s: "Intelligence" },
@@ -17,7 +21,7 @@ export const SUBCLASSES_BY_CLASS = {
     "Moine": ["Voie de la Main Ouverte", "Voie de l'Ombre", "Voie des Éléments", "Voie du Mercenaire"],
     "Paladin": ["Serment de Dévotion", "Serment des Anciens", "Serment de Vengeance", "Serment de Gloire"],
     "Rôdeur": ["Chasseur", "Maître des Bêtes", "Traqueur Sombre", "Vagabond Féerique"],
-    "Roublard": ["Voleur", "Assassin", "Escroc Swashbuckler", "Arnaqueur Magique"],
+    "Roublard": ["Voleur", "Assassin", "Âme acérée", "Arnaqueur arcanique"],
     "Occultiste": ["Le Fiélon", "Le Grand Ancien", "La Archifée", "Le Céleste"]
 };
 
@@ -104,90 +108,18 @@ export function getMod(v) { return Math.floor(((v || 10) - 10) / 2); }
 export function getProf() { return Math.floor(1 + Math.ceil((window.state?.niveau || 1) / 4)); }
 
 export const CATALOGUE_SURVIE = {
-    BUCHE: { 
-        nom: "Bûche", 
-        desc: "Pour un bon feu", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 0.01 
-    },
-    CORDE: { 
-        nom: "Corde robuste", 
-        desc: "30m de longueur", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 1 
-    },
-    COUVERTURE: { 
-        nom: "Couverture", 
-        desc: "Couverture chaude pour 1 personne (Avantage aux JS contre le froid)", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 0.5 
-    },
-    GOURDE: { 
-        nom: "Gourde", 
-        desc: "Contenance 3L", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.05 
-    },
-    HACHETTE: { 
-        nom: "Hachette", 
-        desc: "Pour couper du bois", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 3 
-    },
-    KIT_SOIN: { 
-        nom: "Kit de soin", 
-        desc: "Pour stabiliser les blessés sans faire de test de Médecine", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 10 
-    },
-    LAMPE: { 
-        nom: "Lampe à huile", 
-        desc: "Lumière vive sur 4,5m, lumière faible sur 9m de plus, pendant 6h", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.5 
-    },
-    PEAU: { 
-        nom: "Peau", 
-        desc: "Peau imperméable protégeant de l'humidité", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 2 
-    },
-    PETIT_BOIS: { 
-        nom: "Petit bois", 
-        desc: "Pour démarrer quelques bons feux de camp", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.01 
-    },
-    PIERRE_A_FEU: { 
-        nom: "Pierre à feu", 
-        desc: "Besoin d'une étincelle par ici ?", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.5 
-    },
-    RATION: { 
-        nom: "Ration", 
-        desc: "2/jour pour être en forme", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.2 
-    },
-    TORCHE: { 
-        nom: "Torche", 
-        desc: "Lumière vive sur 6m, lumière faible sur 6m de plus, pendant 1h", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.03 
-    }
+    BUCHE: { nom: "Bûche", desc: "Pour un bon feu", cat: "MATERIEL_SURVIE", taille: 4, valeur: 0.01 },
+    CORDE: { nom: "Corde robuste", desc: "30m de longueur", cat: "MATERIEL_SURVIE", taille: 4, valeur: 1 },
+    COUVERTURE: { nom: "Couverture", desc: "Couverture chaude pour 1 personne (Avantage aux JS contre le froid)", cat: "MATERIEL_SURVIE", taille: 4, valeur: 0.5 },
+    GOURDE: { nom: "Gourde", desc: "Contenance 3L", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.05 },
+    HACHETTE: { nom: "Hachette", desc: "Pour couper du bois", cat: "MATERIEL_SURVIE", taille: 2, valeur: 3 },
+    KIT_SOIN: { nom: "Kit de soin", desc: "Pour stabiliser les blessés sans faire de test de Médecine", cat: "MATERIEL_SURVIE", taille: 2, valeur: 10 },
+    LAMPE: { nom: "Lampe à huile", desc: "Lumière vive sur 4,5m, lumière faible sur 9m de plus, pendant 6h", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.5 },
+    PEAU: { nom: "Peau", desc: "Peau imperméable protégeant de l'humidité", cat: "MATERIEL_SURVIE", taille: 4, valeur: 2 },
+    PETIT_BOIS: { nom: "Petit bois", desc: "Pour démarrer quelques bons feux de camp", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.01 },
+    PIERRE_A_FEU: { nom: "Pierre à feu", desc: "Besoin d'une étincelle par ici ?", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.5 },
+    RATION: { nom: "Ration", desc: "2/jour pour être en forme", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.2 },
+    TORCHE: { nom: "Torche", desc: "Lumière vive sur 6m, lumière faible sur 6m de plus, pendant 1h", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.03 }
 };
 
 export const BAG_TYPES = {
@@ -282,4 +214,37 @@ const getTotalFortuneInPC = (money) => {
            (parseInt(money.po) || 0) * 100 +
            (parseInt(money.pa) || 0) * 10 +
            (parseInt(money.pc) || 0);
+};
+
+/**
+ * Retourne la liste des sous-classes pour une classe donnée et selon la langue choisie ('FR' ou 'EN')
+ * @param {string} className - Nom de la classe (ex: "Druide", "Barbare")
+ * @param {string} lang - 'FR' ou 'EN'
+ * @returns {Array<string>} Liste des sous-classes
+ */
+export function getSubclassesByClass(className, lang = 'FR') {
+    if (!className) return [];
+
+    // Recherche insensible à la casse pour trouver la clé de classe exacte
+    const normalizedKey = Object.keys(SUBCLASSES_BY_CLASS).find(
+        k => k.toLowerCase() === className.toLowerCase().trim()
+    );
+
+    const subclassesFR = normalizedKey ? SUBCLASSES_BY_CLASS[normalizedKey] : [];
+
+    // Si la langue est FR, on retourne la liste française d'origine
+    if (lang.toUpperCase() === 'FR') {
+        return subclassesFR;
+    }
+
+    // Si la langue est EN, on traduit chaque sous-classe du tableau
+    return subclassesFR.map(sc => translateSubclass(sc, 'EN'));
+}
+
+export const SUBCLASSES_BY_LANG = {
+    FR: SUBCLASSES_BY_CLASS,
+    EN: Object.keys(SUBCLASSES_BY_CLASS).reduce((acc, className) => {
+        acc[className] = SUBCLASSES_BY_CLASS[className].map(sc => translateSubclass(sc, 'EN'));
+        return acc;
+    }, {})
 };

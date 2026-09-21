@@ -249,9 +249,9 @@ export function saveData() {
 
     // --- 2. ENREGISTREMENT ---
     if (targetArray) {
-        if (index === -1) {
+        if (index === -1 || index >= targetArray.length) {
             targetArray.push(data);
-        } else {
+        } else if (index >= 0) {
             targetArray[index] = data;
         }
     }
