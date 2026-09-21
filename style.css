@@ -274,3 +274,18 @@ input[type="number"] {
 .is-expanded {
     background-color: rgba(255, 255, 255, 0.1);
 }
+
+/* Animation et bordure dorée/émeraude sur la fiche en Forme Sauvage */
+.is-wildshaped {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+/* Personnalisation de la scrollbar dans la liste des formes */
+#wildshape-list-container::-webkit-scrollbar {
+  width: 4px;
+}
+#wildshape-list-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}

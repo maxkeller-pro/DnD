@@ -1,3 +1,7 @@
+import { SUBCLASSES_TRANSLATIONS, translateSubclass } from './translations.js';
+
+export { SUBCLASSES_TRANSLATIONS, translateSubclass };
+
 export const SKILLS_LIST = [
     { n: "Athlétisme", s: "Force" }, { n: "Acrobaties", s: "Dextérité" }, { n: "Escamotage", s: "Dextérité" }, { n: "Discrétion", s: "Dextérité" },
     { n: "Arcanes", s: "Intelligence" }, { n: "Histoire", s: "Intelligence" }, { n: "Investigation", s: "Intelligence" }, { n: "Nature", s: "Intelligence" }, { n: "Religion", s: "Intelligence" },
@@ -5,96 +9,117 @@ export const SKILLS_LIST = [
     { n: "Tromperie", s: "Charisme" }, { n: "Intimidation", s: "Charisme" }, { n: "Performance", s: "Charisme" }, { n: "Persuasion", s: "Charisme" }
 ];
 
+// Dans js/utils.js
+export const SUBCLASSES_BY_CLASS = {
+    "Barbare": ["Voie du Berserker", "Voie du Arbre-Monde", "Voie du Gardien des Espurs", "Voie du Wild Magic"],
+    "Barde": ["Collège du Savoir", "Collège de la Danse", "Collège de la Séduction", "Collège de la Valor"],
+    "Clerc": ["Domaine de la Vie", "Domaine de la Lumière", "Domaine de la Nature", "Domaine de la Ombre"],
+    "Druide": ["Cercle de la Terre", "Cercle de la Lune", "Cercle des Étoiles", "Cercle du Scribe", "Cercle des titans"],
+    "Ensorceleur": ["Origine Sauvage", "Lignée Draconique", "Magie des Tempêtes", "Esprit Aberrant"],
+    "Guerrier": ["Champion", "Maître d'Armes", "Chevalier Occulte", "Psychique"],
+    "Magicien": ["École d'Évocation", "École d me l'Illusion", "École de Abjuration", "École de Divination"],
+    "Moine": ["Voie de la Main Ouverte", "Voie de l'Ombre", "Voie des Éléments", "Voie du Mercenaire"],
+    "Paladin": ["Serment de Dévotion", "Serment des Anciens", "Serment de Vengeance", "Serment de Gloire"],
+    "Rôdeur": ["Chasseur", "Maître des Bêtes", "Traqueur Sombre", "Vagabond Féerique"],
+    "Roublard": ["Voleur", "Assassin", "Âme acérée", "Arnaqueur arcanique"],
+    "Occultiste": ["Le Fiélon", "Le Grand Ancien", "La Archifée", "Le Céleste"]
+};
+
+export const TITAN_SPELLS_BY_LEVEL = {
+    3: [
+        { 
+            nom: "Grandissement/Rétrécissement", 
+            niveau: 2, 
+            ecole: "Transmutation", 
+            temps: "action", 
+            portee: "9m", 
+            duree: "Concentration, jusqu'à 1 min", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Agrandit ou réduit une créature ou un objet à portée. Agrandissement : La taille de la cible augmente d'une catégorie. Elle gagne un avantage aux jets et sauvegardes de Force et ses attaques infligent 1d4 dégâts supplémentaires. Rapetissement : La taille diminue d'une catégorie. Elle subit un désavantage aux jets et sauvegardes de Force et ses attaques infligent 1d4 dégâts de moins."
+        },
+        { 
+            nom: "Thaumaturgie", 
+            niveau: 0, 
+            ecole: "Transmutation", 
+            temps: "action", 
+            portee: "9m", 
+            duree: "Jusqu'à 1 min", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Permet de créer un petit miracle : modifier l'apparence des yeux, rendre la voix 3 fois plus forte (avantage aux jets d'Intimidation), modifier des flammes, ouvrir/fermer une porte non verrouillée, créer un son bref (tonnerre, cris) ou provoquer une secousse inoffensive. Jusqu'à 3 effets simultanés."
+        },
+        { 
+            nom: "Vague tonnante", 
+            niveau: 1, 
+            ecole: "Évocation", 
+            temps: "action", 
+            portee: "Soi (cône de 4.5m)", 
+            duree: "Instantannée", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Déchaîne une vague d'énergie tonitruante dans un cube de 4,50 m de côté depuis vous. Chaque créature dans la zone doit réussir un jet de sauvegarde de Constitution ou subir 2d8 dégâts de tonnerre et être repoussée de 3 m (moitié des dégâts si réussi). Repousse aussi les objets non sécurisés et résonne jusqu'à 90 m."
+        }
+    ],
+    5: [
+        { 
+            nom: "Peur", 
+            niveau: 3, 
+            ecole: "Illusion", 
+            temps: "action", 
+            portee: "Soi (cône de 9m)", 
+            duree: "Concentration, jusqu'à 1 min", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Chaque créature dans un cône de 9 m doit réussir un JS de Sagesse ou lâcher ce qu'elle tient et subir l'état Effrayé. La cible effrayée doit exécuter l'action Pointe et fuir par le chemin le plus sûr à chaque tour. Si elle termine son tour sans ligne de vue avec vous, elle retente le jet pour dissiper l'effet."
+        }
+    ],
+    7: [
+        { 
+            nom: "Bouclier de feu", 
+            niveau: 4, 
+            ecole: "Évocation", 
+            temps: "action", 
+            portee: "Soi", 
+            duree: "10 minutes", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Des flammes vous enveloppent (lumière vive 3m / faible 3m). Au choix : bouclier chaud (résistance au froid, inflige 2d8 dégâts de feu aux attaquants au corps-à-corps dans les 1,5m) ou bouclier glacial (résistance au feu, inflige 2d8 dégâts de froid aux attaquants)."
+        }
+    ],
+    9: [
+        { 
+            nom: "Vague destructrice", 
+            niveau: 5, 
+            ecole: "Évocation", 
+            temps: "action", 
+            portee: "Soi (rayon de 9m)", 
+            duree: "Instantannée", 
+            prepare: true, 
+            isTitanSpell: true,
+            description: "Une énergie destructrice se propage dans une émanation de 9 m. Chaque créature choisie dans la zone doit réussir un JS de Constitution ou subir 5d6 dégâts de tonnerre + 5d6 dégâts radiants ou nécrotiques (au choix) et tomber À terre. Moitié des dégâts en cas de réussite."
+        }
+    ]
+};
+
 export const statsOrder = ["Force", "Dextérité", "Constitution", "Intelligence", "Sagesse", "Charisme"];
 
 export function getMod(v) { return Math.floor(((v || 10) - 10) / 2); }
 export function getProf() { return Math.floor(1 + Math.ceil((window.state?.niveau || 1) / 4)); }
 
 export const CATALOGUE_SURVIE = {
-    BUCHE: { 
-        nom: "Bûche", 
-        desc: "Pour un bon feu", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 0.01 
-    },
-    CORDE: { 
-        nom: "Corde robuste", 
-        desc: "30m de longueur", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 1 
-    },
-    COUVERTURE: { 
-        nom: "Couverture", 
-        desc: "Couverture chaude pour 1 personne (Avantage aux JS contre le froid)", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 0.5 
-    },
-    GOURDE: { 
-        nom: "Gourde", 
-        desc: "Contenance 3L", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.05 
-    },
-    HACHETTE: { 
-        nom: "Hachette", 
-        desc: "Pour couper du bois", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 3 
-    },
-    KIT_SOIN: { 
-        nom: "Kit de soin", 
-        desc: "Pour stabiliser les blessés sans faire de test de Médecine", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 10 
-    },
-    LAMPE: { 
-        nom: "Lampe à huile", 
-        desc: "Lumière vive sur 4,5m, lumière faible sur 9m de plus, pendant 6h", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.5 
-    },
-    PEAU: { 
-        nom: "Peau", 
-        desc: "Peau imperméable protégeant de l'humidité", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 4, 
-        valeur: 2 
-    },
-    PETIT_BOIS: { 
-        nom: "Petit bois", 
-        desc: "Pour démarrer quelques bons feux de camp", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.01 
-    },
-    PIERRE_A_FEU: { 
-        nom: "Pierre à feu", 
-        desc: "Besoin d'une étincelle par ici ?", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.5 
-    },
-    RATION: { 
-        nom: "Ration", 
-        desc: "2/jour pour être en forme", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 2, 
-        valeur: 0.2 
-    },
-    TORCHE: { 
-        nom: "Torche", 
-        desc: "Lumière vive sur 6m, lumière faible sur 6m de plus, pendant 1h", 
-        cat: "MATERIEL_SURVIE", 
-        taille: 1, 
-        valeur: 0.03 
-    }
+    BUCHE: { nom: "Bûche", desc: "Pour un bon feu", cat: "MATERIEL_SURVIE", taille: 4, valeur: 0.01 },
+    CORDE: { nom: "Corde robuste", desc: "30m de longueur", cat: "MATERIEL_SURVIE", taille: 4, valeur: 1 },
+    COUVERTURE: { nom: "Couverture", desc: "Couverture chaude pour 1 personne (Avantage aux JS contre le froid)", cat: "MATERIEL_SURVIE", taille: 4, valeur: 0.5 },
+    GOURDE: { nom: "Gourde", desc: "Contenance 3L", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.05 },
+    HACHETTE: { nom: "Hachette", desc: "Pour couper du bois", cat: "MATERIEL_SURVIE", taille: 2, valeur: 3 },
+    KIT_SOIN: { nom: "Kit de soin", desc: "Pour stabiliser les blessés sans faire de test de Médecine", cat: "MATERIEL_SURVIE", taille: 2, valeur: 10 },
+    LAMPE: { nom: "Lampe à huile", desc: "Lumière vive sur 4,5m, lumière faible sur 9m de plus, pendant 6h", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.5 },
+    PEAU: { nom: "Peau", desc: "Peau imperméable protégeant de l'humidité", cat: "MATERIEL_SURVIE", taille: 4, valeur: 2 },
+    PETIT_BOIS: { nom: "Petit bois", desc: "Pour démarrer quelques bons feux de camp", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.01 },
+    PIERRE_A_FEU: { nom: "Pierre à feu", desc: "Besoin d'une étincelle par ici ?", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.5 },
+    RATION: { nom: "Ration", desc: "2/jour pour être en forme", cat: "MATERIEL_SURVIE", taille: 2, valeur: 0.2 },
+    TORCHE: { nom: "Torche", desc: "Lumière vive sur 6m, lumière faible sur 6m de plus, pendant 1h", cat: "MATERIEL_SURVIE", taille: 1, valeur: 0.03 }
 };
 
 export const BAG_TYPES = {
@@ -150,6 +175,19 @@ export const BAG_TYPES = {
     }
 };
 
+export function getUnlockedTitanSpells(characterLevel) {
+    const spells = [];
+    
+    // Parcourt les paliers (3, 5, 7, 9)
+    Object.keys(TITAN_SPELLS_BY_LEVEL).forEach(levelReq => {
+        if (characterLevel >= parseInt(levelReq, 10)) {
+            spells.push(...TITAN_SPELLS_BY_LEVEL[levelReq]);
+        }
+    });
+    
+    return spells;
+}
+
 // Déduit le montant du porte-monnaie (en partant des petites pièces vers les grandes)
 export const subtractMoney = (money, costInPO) => {
     let totalPC = getTotalFortuneInPC(money);
@@ -176,4 +214,37 @@ const getTotalFortuneInPC = (money) => {
            (parseInt(money.po) || 0) * 100 +
            (parseInt(money.pa) || 0) * 10 +
            (parseInt(money.pc) || 0);
+};
+
+/**
+ * Retourne la liste des sous-classes pour une classe donnée et selon la langue choisie ('FR' ou 'EN')
+ * @param {string} className - Nom de la classe (ex: "Druide", "Barbare")
+ * @param {string} lang - 'FR' ou 'EN'
+ * @returns {Array<string>} Liste des sous-classes
+ */
+export function getSubclassesByClass(className, lang = 'FR') {
+    if (!className) return [];
+
+    // Recherche insensible à la casse pour trouver la clé de classe exacte
+    const normalizedKey = Object.keys(SUBCLASSES_BY_CLASS).find(
+        k => k.toLowerCase() === className.toLowerCase().trim()
+    );
+
+    const subclassesFR = normalizedKey ? SUBCLASSES_BY_CLASS[normalizedKey] : [];
+
+    // Si la langue est FR, on retourne la liste française d'origine
+    if (lang.toUpperCase() === 'FR') {
+        return subclassesFR;
+    }
+
+    // Si la langue est EN, on traduit chaque sous-classe du tableau
+    return subclassesFR.map(sc => translateSubclass(sc, 'EN'));
+}
+
+export const SUBCLASSES_BY_LANG = {
+    FR: SUBCLASSES_BY_CLASS,
+    EN: Object.keys(SUBCLASSES_BY_CLASS).reduce((acc, className) => {
+        acc[className] = SUBCLASSES_BY_CLASS[className].map(sc => translateSubclass(sc, 'EN'));
+        return acc;
+    }, {})
 };
