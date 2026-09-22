@@ -1,4 +1,4 @@
-export const APP_VERSION = "4.1";
+export const APP_VERSION = "5.0";
 
 export function getInitialState() {
     return {
