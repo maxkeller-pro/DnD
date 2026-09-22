@@ -1,5 +1,5 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, SUBCLASSES_BY_CLASS, SUBCLASSES_BY_LANG, getSubclassesByClass, translateSubclass, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, getSubclassesByClass, translateSubclass, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
 import { saveToSupabase } from './api.js';
 
 export function updateSubclassLangButtons(currentLang) {
@@ -466,36 +466,62 @@ export function renderAttaques() {
 
 export function renderCapacites() {
     const state = window.state;
-    const container = document.getElementById('skills-list'); // Note: ton ID est skills-list dans le HTML original
+    const container = document.getElementById('skills-list');
     const template = document.getElementById('template-capacite');
 
     if (!container || !template || !state.capacites) return;
 
     container.innerHTML = '';
     const p = getProf();
+    const level = state.niveau || 1;
+
+    // Configuration des badges selon le type de capacité
+    const typeBadges = {
+        action: { label: 'Action', class: 'bg-red-500/10 text-red-400 border-red-500/30' },
+        bonus: { label: 'A. Bonus', class: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
+        reaction: { label: 'Réaction', class: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
+        feat: { label: 'Don', class: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+        damage: { label: 'Dégâts', class: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
+        other: { label: 'Autre', class: 'bg-zinc-800 text-zinc-400 border-zinc-700' }
+    };
 
     state.capacites.forEach((c, i) => {
         const id = `cap-${i}`;
         const clone = template.content.cloneNode(true);
         const root = clone.querySelector('.item-card');
 
-        // --- LOGIQUE DU MAXIMUM ---
-        const effectiveMax = c.useProf ? p : (parseInt(c.max) || 0);
+        // --- LOGIQUE DU MAXIMUM (Niveau > Maîtrise > Fixe) ---
+        let effectiveMax = parseInt(c.max) || 0;
+        if (c.useLevel) {
+            effectiveMax = level;
+        } else if (c.useProf) {
+            effectiveMax = p;
+        }
 
-        // Sécurité : ajustement si le niveau change
+        // Sécurité : ajustement si le niveau ou la maîtrise baisse
         if (c.current > effectiveMax) c.current = effectiveMax;
 
         // --- AFFICHAGE TEXTES ---
         root.querySelector('.cap-nom').innerText = c.nom;
         root.querySelector('.cap-desc-text').innerText = c.desc || "";
 
-        // --- GESTION DU BADGE (REPOS) ---
+        // --- GESTION DU BADGE DE TYPE (Action, Bonus, Don, etc.) ---
+        const typeBadgeEl = root.querySelector('.cap-type-badge');
+        if (typeBadgeEl) {
+            const typeConfig = typeBadges[c.type] || typeBadges.other;
+            typeBadgeEl.className = `cap-type-badge text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${typeConfig.class}`;
+            typeBadgeEl.innerText = typeConfig.label;
+        }
+
+        // --- GESTION DU BADGE DE REPOS (R. Court / R. Long) ---
         const badge = root.querySelector('.cap-badge');
-        if (c.reset && c.reset !== 'none') {
-            badge.classList.remove('hidden');
-            badge.innerText = c.reset === 'court' ? 'R. Court' : 'R. Long';
-        } else {
-            badge.classList.add('hidden');
+        if (badge) {
+            if (c.reset && c.reset !== 'none') {
+                badge.classList.remove('hidden');
+                badge.innerText = c.reset === 'court' ? 'R. Court' : 'R. Long';
+            } else {
+                badge.classList.add('hidden');
+            }
         }
 
         // --- GESTION DES UTILISATIONS ---
@@ -514,7 +540,6 @@ export function renderCapacites() {
                 if (val < 0) val = 0;
 
                 e.target.value = val;
-
                 window.state.capacites[i].current = val;
 
                 if (window.saveToSupabase) {
@@ -527,12 +552,11 @@ export function renderCapacites() {
 
         // --- ÉTAT DÉPLIÉ ---
         if (state.openedDescs.includes(id)) {
-            root.querySelector('.cap-desc-container').classList.add('open');
+            root.querySelector('.cap-desc-container')?.classList.add('open');
         }
 
         // --- ÉVÉNEMENTS ---
         root.querySelector('[data-action="toggle"]').onclick = (e) => {
-            // Empêche de fermer/ouvrir si on clique sur l'input ou un bouton
             if (e.target.tagName !== 'INPUT' && !e.target.closest('button')) {
                 if (window.toggleDesc) window.toggleDesc(id);
             }

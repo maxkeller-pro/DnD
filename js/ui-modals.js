@@ -1,4 +1,5 @@
 import { renderAll } from './ui-render.js';
+import { getProf } from './utils.js';
 
 /**
  * Ouvre la modale d'édition/création
@@ -9,29 +10,28 @@ export function openModal(type, index = -1) {
     document.getElementById('m-type').value = type;
     document.getElementById('m-index').value = index;
 
-    // 1. Visibilité des sections (simplifiée)
-    ['m-atk-fields', 'm-spell-fields', 'm-skill-fields', 'm-item-fields'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    // 1. Visibilité des sections
+    ['m-atk-fields', 'm-spell-fields', 'm-skill-fields', 'm-item-fields'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
 
-    if (type === 'attack' || type === 'mount-attack') document.getElementById('m-atk-fields').classList.remove('hidden');
-    if (type === 'spell') document.getElementById('m-spell-fields').classList.remove('hidden');
-    if (type === 'skill' || type === 'mount-skill') document.getElementById('m-skill-fields').classList.remove('hidden');
+    if (type === 'attack' || type === 'mount-attack') document.getElementById('m-atk-fields')?.classList.remove('hidden');
+    if (type === 'spell') document.getElementById('m-spell-fields')?.classList.remove('hidden');
+    if (type === 'skill' || type === 'mount-skill') document.getElementById('m-skill-fields')?.classList.remove('hidden');
     if (type === 'item' || type === 'mount-item-left' || type === 'mount-item-right') {
-        document.getElementById('m-item-fields').classList.remove('hidden');
+        document.getElementById('m-item-fields')?.classList.remove('hidden');
     }
 
     // 2. Mode ÉDITION (index !== -1)
     if (index !== -1) {
         let item;
         
-        // --- NOUVELLE LOGIQUE DE RÉCUPÉRATION ---
         if (type === 'attack') item = window.state.attaques[index];
         else if (type === 'mount-attack') item = window.state.mountData.attacks[index];
-        
         else if (type === 'skill') item = window.state.capacites[index];
         else if (type === 'mount-skill') item = window.state.mountData.skills[index];
-        
         else if (type === 'spell') item = window.state.spells[index];
-        
         else if (type === 'item') item = window.state.inventaire[index];
         else if (type === 'mount-item-left') item = window.state.mountData.inventoryLeft[index];
         else if (type === 'mount-item-right') item = window.state.mountData.inventoryRight[index];
@@ -42,7 +42,7 @@ export function openModal(type, index = -1) {
         document.getElementById('m-name').value = item.nom || "";
         document.getElementById('m-desc').value = item.desc || "";
 
-        // Logique spécifique Attaques (Perso OU Monture)
+        // Logique spécifique Attaques
         if (type === 'attack' || type === 'mount-attack') {
             const hasSec = item.hasSecondary || false;
             document.getElementById('m-atk-stat').value = item.stat || "str";
@@ -56,16 +56,25 @@ export function openModal(type, index = -1) {
             document.getElementById('m-atk-type2').value = item.damageType2 || "";
         }
 
-        // Logique spécifique Skills (Perso OU Monture)
+        // Logique spécifique Capacités (Correction ici !)
         if (type === 'skill' || type === 'mount-skill') {
             const isProf = item.useProf || false;
+            const isLevel = item.useLevel || false;
+
+            document.getElementById('m-skill-type').value = item.type || 'action';
             document.getElementById('m-skill-use-prof').checked = isProf;
-            document.getElementById('m-skill-max').value = isProf ? "" : (item.max || 0);
-            document.getElementById('m-skill-max').disabled = isProf;
-            document.getElementById('m-skill-reset').value = item.reset || "none";
+            document.getElementById('m-skill-use-level').checked = isLevel;
+            
+            const maxInput = document.getElementById('m-skill-max');
+            if (maxInput) {
+                maxInput.value = (isProf || isLevel) ? "" : (item.max || 0);
+                maxInput.disabled = isProf || isLevel;
+            }
+            
+            document.getElementById('m-skill-reset').value = item.reset || "long";
         }
 
-        // Logique spécifique Spells
+        // Logique spécifique Sorts
         if (type === 'spell') {
             document.getElementById('m-spell-rank').value = item.niveau || 0;
             document.getElementById('m-spell-school').value = item.ecole || 'abjuration';
@@ -78,14 +87,27 @@ export function openModal(type, index = -1) {
             document.getElementById('comp-m').checked = item.composantes?.m || false;
         }
 
-        // Logique spécifique Items (Perso OU Monture)
+        // Logique spécifique Objets
         if (type === 'item' || type === 'mount-item-left' || type === 'mount-item-right') {
-            document.getElementById('m-item-weight').value = item.weight || 0;
+            const weightInput = document.getElementById('item-weight') || document.getElementById('m-item-weight');
+            if (weightInput) weightInput.value = item.weight || 0;
         }
         
     } else {
-        // 3. Mode CRÉATION
-        resetAllFields();
+        // 3. Mode CRÉATION : Réinitialisation des champs
+        if (typeof resetAllFields === 'function') {
+            resetAllFields();
+        } else {
+            document.getElementById('m-name').value = "";
+            document.getElementById('m-desc').value = "";
+            if (document.getElementById('m-skill-type')) document.getElementById('m-skill-type').value = "action";
+            if (document.getElementById('m-skill-use-prof')) document.getElementById('m-skill-use-prof').checked = false;
+            if (document.getElementById('m-skill-use-level')) document.getElementById('m-skill-use-level').checked = false;
+            if (document.getElementById('m-skill-max')) {
+                document.getElementById('m-skill-max').value = "";
+                document.getElementById('m-skill-max').disabled = false;
+            }
+        }
     }
     
     document.getElementById('modal-ui').classList.remove('hidden');
@@ -203,15 +225,26 @@ export function saveData() {
     } 
     else if (type === 'skill' || type === 'mount-skill') {
         const useProfValue = document.getElementById('m-skill-use-prof')?.checked || false;
-        const maxVal = useProfValue ? -1 : (parseInt(document.getElementById('m-skill-max')?.value) || 0);
+        const useLevelValue = document.getElementById('m-skill-use-level')?.checked || false;
+        
+        // Calcul du maximum
+        let maxVal = parseInt(document.getElementById('m-skill-max')?.value) || 0;
+        if (useLevelValue) {
+            maxVal = state.niveau || 1;
+        } else if (useProfValue) {
+            maxVal = getProf();
+        }
+
         const oldArray = (type === 'skill') ? state.capacites : state.mountData.skills;
-        const currentVal = (index === -1) ? (useProfValue ? 2 : maxVal) : (oldArray[index]?.current || 0);
+        const currentVal = (index === -1) ? maxVal : (oldArray[index]?.current ?? maxVal);
 
         data = {
             ...data,
+            type: document.getElementById('m-skill-type')?.value || "action", // <-- RÉCUPÈRE LE TYPE D'ACTION
             max: maxVal,
             current: currentVal,
             useProf: useProfValue,
+            useLevel: useLevelValue, // <-- RÉCUPÈRE L'OPTION "LIER AU NIVEAU"
             reset: document.getElementById('m-skill-reset')?.value || "long"
         };
         targetArray = (type === 'skill') ? state.capacites : state.mountData.skills;

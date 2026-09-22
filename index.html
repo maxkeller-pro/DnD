@@ -18,8 +18,9 @@
         <div class="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-black text-white uppercase tracking-widest">Abracadabra connecte-toi</h1>
-                <p class="text-zinc-500 text-xs mt-2 uppercase font-bold tracking-tighter">Connectez-vous pour accéder à
-                    votre fiche</p>
+                <p class="text-zinc-500 text-xs mt-2 uppercase font-bold tracking-tighter">
+                    Connectez-vous pour accéder à votre fiche
+                </p>
             </div>
 
             <div class="space-y-4">
@@ -29,7 +30,14 @@
                         class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white focus:border-blue-500 transition outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-zinc-500 uppercase mb-1 ml-1">Mot de passe</label>
+                    <div class="flex justify-between items-center mb-1 ml-1">
+                        <label class="text-[10px] font-black text-zinc-500 uppercase">Mot de passe</label>
+                        <!-- BOUTON MOT DE PASSE OUBLIÉ -->
+                        <button type="button" onclick="openResetPasswordModal()"
+                            class="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition uppercase tracking-wider">
+                            Oublié ?
+                        </button>
+                    </div>
                     <input type="password" id="auth-password" placeholder="••••••••"
                         class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white focus:border-blue-500 transition outline-none">
                 </div>
@@ -50,6 +58,32 @@
         </div>
     </div>
 
+    <!-- MODALE DE RÉINITIALISATION DU MOT DE PASSE -->
+    <div id="reset-password-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
+            <h3 class="text-lg font-black text-white uppercase tracking-wider">Réinitialiser le mot de passe</h3>
+            <p class="text-xs text-zinc-400">Saisis ton adresse e-mail pour recevoir un lien de réinitialisation.</p>
+
+            <div>
+                <label class="block text-[10px] font-black text-zinc-500 uppercase mb-1 ml-1">Email</label>
+                <input type="email" id="reset-email-input" placeholder="aventurier@donjon.fr"
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeResetPasswordModal()"
+                    class="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold hover:bg-zinc-700 transition uppercase tracking-wider">
+                    Annuler
+                </button>
+                <button type="button" onclick="handleSendResetEmail()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-500 transition uppercase tracking-wider shadow-lg shadow-blue-900/20">
+                    Envoyer le lien
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="char-selection-overlay"
         class="fixed inset-0 z-[90] bg-zinc-950 flex items-center justify-center p-4 hidden">
         <div id="app-version"
@@ -57,7 +91,8 @@
             v0.0.0
         </div>
 
-        <div class="fixed top-4 right-4 z-50 inline-flex rounded-lg border border-zinc-800 overflow-hidden bg-zinc-900 text-[10px] font-black p-1 gap-1">
+        <div
+            class="fixed top-4 right-4 z-50 inline-flex rounded-lg border border-zinc-800 overflow-hidden bg-zinc-900 text-[10px] font-black p-1 gap-1">
             <button type="button" id="btn-global-lang-fr" onclick="window.setGlobalLanguage('FR')"
                 class="px-2.5 py-1 rounded transition bg-emerald-600 text-white font-black"
                 title="Interface en français">FR</button>
@@ -190,8 +225,10 @@
                             </div>
 
                             <!-- CLASSE -->
-                            <div class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
+                            <div
+                                class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
+                                <span
+                                    class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
                                 <select id="char-class"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
                                     onchange="window.onClassChange(this.value)">
@@ -214,7 +251,8 @@
                             <!-- SOUS-CLASSE (Débloquée au Niveau 3) -->
                             <div id="subclass-wrapper"
                                 class="hidden flex items-center gap-2 bg-amber-950/40 px-3 py-1.5 rounded-full border border-amber-600/40">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-amber-500">Sous-classe</span>
+                                <span
+                                    class="text-[9px] font-black uppercase tracking-widest text-amber-500">Sous-classe</span>
 
                                 <!-- Remplacement de l'input par un select -->
                                 <select id="char-subclass"
@@ -816,25 +854,51 @@
                         </div>
                     </div>
                     <div id="m-skill-fields" class="hidden space-y-4">
+                        <!-- Type / Catégorie de capacité -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-black text-blue-500">Type de capacité</label>
+                            <select id="m-skill-type"
+                                class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-lg text-white text-xs outline-none focus:border-blue-500">
+                                <option value="action">Action</option>
+                                <option value="bonus">Action Bonus</option>
+                                <option value="reaction">Réaction</option>
+                                <option value="feat">Don (Feat)</option>
+                                <option value="damage">Dégâts / Combat</option>
+                                <option value="other">Autre / Passif</option>
+                            </select>
+                        </div>
+
+                        <!-- Utilisations & Options de liaison -->
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[9px] uppercase font-black text-blue-500">Utilisations Max</label>
                                 <input type="number" id="m-skill-max"
-                                    class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-lg"
+                                    class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-lg text-white"
                                     placeholder="Ex: 3">
                             </div>
-                            <div class="flex items-end pb-3 gap-2">
-                                <input type="checkbox" id="m-skill-use-prof"
-                                    onchange="document.getElementById('m-skill-max').disabled = this.checked"
-                                    class="w-4 h-4 accent-blue-500">
-                                <label class="text-[10px] font-bold text-zinc-400">Lier à la Maîtrise</label>
+
+                            <div class="flex flex-col justify-end gap-2 pb-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="m-skill-use-prof"
+                                        onchange="if(this.checked) document.getElementById('m-skill-use-level').checked = false; document.getElementById('m-skill-max').disabled = this.checked || document.getElementById('m-skill-use-level').checked;"
+                                        class="w-4 h-4 accent-blue-500">
+                                    <span class="text-[10px] font-bold text-zinc-400">Lier à la Maîtrise</span>
+                                </label>
+
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="m-skill-use-level"
+                                        onchange="if(this.checked) document.getElementById('m-skill-use-prof').checked = false; document.getElementById('m-skill-max').disabled = this.checked || document.getElementById('m-skill-use-prof').checked;"
+                                        class="w-4 h-4 accent-blue-500">
+                                    <span class="text-[10px] font-bold text-zinc-400">Lier au Niveau</span>
+                                </label>
                             </div>
                         </div>
 
+                        <!-- Type de récupération (Repos) -->
                         <div class="space-y-1">
                             <label class="text-[9px] uppercase font-black text-blue-500">Récupération</label>
                             <select id="m-skill-reset"
-                                class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-lg">
+                                class="w-full p-3 !bg-zinc-950 border border-zinc-800 rounded-lg text-white text-xs">
                                 <option value="long">Repos Long</option>
                                 <option value="court">Repos Court</option>
                                 <option value="none">Aucun</option>
@@ -932,6 +996,12 @@
                 <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2">
                         <span class="cap-nom font-black text-white text-[13px] uppercase tracking-wider"></span>
+
+                        <!-- BADGE TYPE D'ACTIVATION (Action, Bonus, Réaction, Don, etc.) -->
+                        <span
+                            class="cap-type-badge text-[9px] font-black uppercase px-2 py-0.5 rounded-full border hidden"></span>
+
+                        <!-- BADGE REPOS (R. Court / R. Long) -->
                         <span
                             class="cap-badge text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase hidden"></span>
                     </div>
@@ -1464,7 +1534,8 @@
 
                     <!-- Champ d'importation de fichier image -->
                     <div>
-                        <label class="text-[10px] text-zinc-400 uppercase font-semibold">Image de la forme (Fichier PC)</label>
+                        <label class="text-[10px] text-zinc-400 uppercase font-semibold">Image de la forme (Fichier
+                            PC)</label>
                         <input type="file" id="ws-new-image-file" accept="image/*"
                             class="w-full bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg p-1.5 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
                         <!-- Champ masqué pour stocker l'image encodée en base64 -->
@@ -1472,18 +1543,18 @@
                     </div>
 
                     <script>
-                    // Écouteur pour convertir l'image locale dès la sélection
-                    document.getElementById('ws-new-image-file')?.addEventListener('change', function(e) {
-                        const file = e.target.files[0];
-                        if (!file) return;
+                        // Écouteur pour convertir l'image locale dès la sélection
+                        document.getElementById('ws-new-image-file')?.addEventListener('change', function (e) {
+                            const file = e.target.files[0];
+                            if (!file) return;
 
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            // Stocke l'image convertie en base64 dans le champ caché
-                            document.getElementById('ws-new-image-base64').value = event.target.result;
-                        };
-                        reader.readAsDataURL(file);
-                    });
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                // Stocke l'image convertie en base64 dans le champ caché
+                                document.getElementById('ws-new-image-base64').value = event.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        });
                     </script>
 
                     <!-- Option Forme Titan -->
@@ -1523,7 +1594,30 @@
         </div>
     </div>
 
-    <div id="global-loader" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center gap-4 hidden">
+    <!-- Modale de définition du nouveau mot de passe -->
+    <div id="new-password-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-md z-[120] flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
+            <h3 class="text-lg font-black text-white uppercase tracking-wider">Nouveau mot de passe</h3>
+            <p class="text-xs text-zinc-400">Saisis ton nouveau mot de passe pour mettre à jour ton compte.</p>
+
+            <div>
+                <label class="block text-[10px] font-black text-zinc-500 uppercase mb-1 ml-1">Mot de passe</label>
+                <input type="password" id="update-password-input" placeholder="••••••••"
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="button" onclick="handleUpdatePassword()"
+                    class="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-500 transition uppercase tracking-wider shadow-lg shadow-blue-900/20">
+                    Enregistrer le mot de passe
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-loader"
+        class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center gap-4 hidden">
         <div class="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
         <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">Chargement...</span>
     </div>

@@ -1,10 +1,10 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
-import { handleLogin, handleSignup, handleLogout, checkUser } from './js/auth.js';
+import { handleLogin, handleSignup, handleLogout, checkUser, openResetPasswordModal, closeResetPasswordModal, handleSendResetEmail, handleUpdatePassword } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, updateSubclassLangButtons, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
+import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab, saveData } from './js/ui-modals.js';
 import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney, SUBCLASSES_BY_CLASS, translateSubclass, TITAN_SPELLS_BY_LEVEL } from './js/utils.js';
-import { getEffectiveSkillsAndSaves } from './js/wildshape.js';
+import {  } from './js/auth.js';
 
 // --- DONNÉES DE RÉFÉRENCE & ÉTAT GLOBAL ---
 let filterPreparedOnly = false;
@@ -1320,8 +1320,12 @@ window.switchTab = switchTab;
 // Authentification & Session
 window.handleLogin = handleLogin;
 window.handleSignup = handleSignup;
-window.logout = handleLogout;
+window.handleLogout = handleLogout;
 window.checkUser = checkUser;
+window.openResetPasswordModal = openResetPasswordModal;
+window.closeResetPasswordModal = closeResetPasswordModal;
+window.handleSendResetEmail = handleSendResetEmail;
+window.handleUpdatePassword = handleUpdatePassword;
 
 // Gestion des Personnages & API
 window.loadUserData = loadUserData;
