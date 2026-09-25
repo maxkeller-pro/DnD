@@ -104,22 +104,21 @@
         <div class="w-full max-w-2xl">
             <div class="flex justify-between items-center mb-8">
                 <div>
-                    <h2 class="text-2xl font-black text-white uppercase tracking-widest italic">Mes Personnages</h2>
-                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-tighter">Choisissez votre destin</p>
+                    <h2 class="text-2xl font-black text-white uppercase tracking-widest italic"
+                        data-i18n="myCharacters"></h2>
+                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-tighter" data-i18n="chooseDestiny"></p>
                 </div>
                 <button onclick="createNewCharacter()"
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase transition shadow-lg shadow-emerald-900/20">
-                    + Nouveau Personnage
-                </button>
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase transition shadow-lg shadow-emerald-900/20"
+                    data-i18n="newCharacters"></button>
             </div>
 
             <div id="characters-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             </div>
 
             <button onclick="handleLogout()"
-                class="mt-8 text-zinc-600 hover:text-zinc-400 text-[10px] uppercase font-bold tracking-widest block mx-auto">
-                Déconnexion
-            </button>
+                class="mt-8 text-zinc-600 hover:text-zinc-400 text-[10px] uppercase font-bold tracking-widest block mx-auto"
+                data-i18n="disconnection"></button>
         </div>
     </div>
 
@@ -137,7 +136,7 @@
                     <div id="portrait-placeholder"
                         class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
                         <span class="text-4xl opacity-10">👤</span>
-                        <p class="text-[10px] uppercase tracking-widest text-zinc-700 mt-2">Aucune image</p>
+                        <p class="text-[10px] uppercase tracking-widest text-zinc-700 mt-2" data-i18n="noPicture"></p>
                     </div>
                 </div>
 
@@ -153,14 +152,15 @@
             <button onclick="openMountModal()"
                 class="w-full mt-4 flex items-center justify-center gap-3 py-3 border border-amber-600/30 bg-amber-600/5 hover:bg-amber-600/10 rounded-xl transition-all group">
                 <span class="text-lg group-hover:scale-110 transition-transform">🐎</span>
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Fiche Monture</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600"
+                    data-i18n="mountPic"></span>
             </button>
 
             <button onclick="openBagModal()"
                 class="w-full mt-4 flex items-center justify-center gap-3 py-3 border border-zinc-600/30 bg-zinc-600/5 hover:bg-zinc-600/10 rounded-xl transition-all group">
                 <span class="text-lg group-hover:scale-110 transition-transform">🎒</span>
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Sac à
-                    Dos</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
+                    data-i18n="backpack"></span>
             </button>
 
             <!-- Zone Druide : Forme Sauvage -->
@@ -171,8 +171,13 @@
 
             <!-- Bouton pour ouvrir la modale de gestion (placé sous le sac à dos) -->
             <button id="btn-wildshape-manager" onclick="window.openWildShapeManager()"
-                class="hidden w-full py-2 px-3 mt-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2">
-                🐾 Gérer mes Formes Sauvages
+                class="hidden w-full py-2 px-3 mt-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2"
+                data-i18n="handleBeastForms"></button>
+
+            <button id="btn-bastion-manager" onclick="window.openBastionManager()"
+                class="hidden w-full py-2 px-3 mt-2 bg-amber-950/40 hover:bg-amber-900/40 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2"
+                data-i18n="manageBastion">
+                🏰 Gérer mon Bastion
             </button>
         </div>
 
@@ -180,20 +185,19 @@
             <div class="border-b border-gray-800 pb-8 mb-8">
                 <div class="flex items-center gap-6 mb-4">
                     <button onclick="backToSelection()"
-                        class="flex items-center gap-2 text-zinc-500 hover:text-emerald-500 transition uppercase font-black text-[10px] tracking-widest">
+                        class="flex items-center gap-2 text-zinc-500 hover:text-emerald-500 transition uppercase font-black text-[10px] tracking-widest"
+                        data-i18n="switchChar">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
                         </svg>
-                        Changer de personnages
                     </button>
 
                     <div class="h-3 w-[1px] bg-zinc-800"></div>
 
                     <button onclick="handleLogout()"
-                        class="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-black tracking-widest transition">
-                        Déconnexion
-                    </button>
+                        class="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-black tracking-widest transition"
+                        data-i18n="disconnection"></button>
                 </div>
                 <div class="flex flex-col md:flex-row justify-between items-start gap-8">
                     <div class="w-full md:w-1/2 space-y-4">
@@ -205,54 +209,55 @@
                             <!-- RACE -->
                             <div
                                 class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Race</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500"
+                                    data-i18n="race"></span>
                                 <select id="char-race"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
                                     onchange="window.updateField('race', this.value);">
-                                    <option value="Humain">Humain</option>
-                                    <option value="Elfe">Elfe</option>
-                                    <option value="Nain">Nain</option>
-                                    <option value="Halfelin">Halfelin</option>
-                                    <option value="Enfant de dragon">Drakéïde</option>
-                                    <option value="Gnome">Gnome</option>
-                                    <option value="Demi-Elfe">Demi-Elfe</option>
-                                    <option value="Demi-Orque">Demi-Orque</option>
-                                    <option value="Tieffelin">Tieffelin</option>
-                                    <option value="Goliath">Goliath</option>
-                                    <option value="Aasimar">Aasimar</option>
-                                    <option value="Yuan-ti">Yuan-ti</option>
+                                    <option value="Humain" data-i18n="raceHuman"></option>
+                                    <option value="Elfe" data-i18n="raceElf"></option>
+                                    <option value="Nain" data-i18n="raceDwarf"></option>
+                                    <option value="Halfelin" data-i18n="raceHalfling"></option>
+                                    <option value="Enfant de dragon" data-i18n="raceDragonborn"></option>
+                                    <option value="Gnome" data-i18n="raceGnome"></option>
+                                    <option value="Demi-Elfe" data-i18n="raceHalfElf"></option>
+                                    <option value="Demi-Orque" data-i18n="raceHalfOrc"></option>
+                                    <option value="Tieffelin" data-i18n="raceTiefling"></option>
+                                    <option value="Goliath" data-i18n="raceGoliath"></option>
+                                    <option value="Aasimar" data-i18n="raceAasimar"></option>
+                                    <option value="Yuan-ti" data-i18n="raceYuanTi"></option>
                                 </select>
                             </div>
 
                             <!-- CLASSE -->
                             <div
                                 class="flex items-center gap-2 bg-gray-900/80 px-4 py-1.5 rounded-full border border-gray-700">
-                                <span
-                                    class="text-[9px] font-black uppercase tracking-widest text-gray-500">Classe</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500"
+                                    data-i18n="class"></span>
                                 <select id="char-class"
                                     class="bg-transparent border-none p-0 text-sm font-bold focus:ring-0 cursor-pointer"
                                     onchange="window.onClassChange(this.value)">
-                                    <option value="Artificier">Artificier</option>
-                                    <option value="Barbare">Barbare</option>
-                                    <option value="Barde">Barde</option>
-                                    <option value="Clerc">Clerc</option>
-                                    <option value="Druide">Druide</option>
-                                    <option value="Ensorceleur">Ensorceleur</option>
-                                    <option value="Guerrier">Guerrier</option>
-                                    <option value="Magicien">Magicien</option>
-                                    <option value="Moine">Moine</option>
-                                    <option value="Occultiste">Occultiste</option>
-                                    <option value="Paladin">Paladin</option>
-                                    <option value="Rôdeur">Rôdeur</option>
-                                    <option value="Roublard">Roublard</option>
+                                    <option value="Artificier" data-i18n="classArtificer"></option>
+                                    <option value="Barbare" data-i18n="classBarbarian"></option>
+                                    <option value="Barde" data-i18n="classBard"></option>
+                                    <option value="Clerc" data-i18n="classCleric"></option>
+                                    <option value="Druide" data-i18n="classDruid"></option>
+                                    <option value="Ensorceleur" data-i18n="classSorcerer"></option>
+                                    <option value="Guerrier" data-i18n="classFighter"></option>
+                                    <option value="Magicien" data-i18n="classWizard"></option>
+                                    <option value="Moine" data-i18n="classMonk"></option>
+                                    <option value="Occultiste" data-i18n="classWarlock"></option>
+                                    <option value="Paladin" data-i18n="classPaladin"></option>
+                                    <option value="Rôdeur" data-i18n="classRanger"></option>
+                                    <option value="Roublard" data-i18n="classRogue"></option>
                                 </select>
                             </div>
 
                             <!-- SOUS-CLASSE (Débloquée au Niveau 3) -->
                             <div id="subclass-wrapper"
                                 class="hidden flex items-center gap-2 bg-amber-950/40 px-3 py-1.5 rounded-full border border-amber-600/40">
-                                <span
-                                    class="text-[9px] font-black uppercase tracking-widest text-amber-500">Sous-classe</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-amber-500"
+                                    data-i18n="subclass"></span>
 
                                 <!-- Remplacement de l'input par un select -->
                                 <select id="char-subclass"
@@ -265,7 +270,8 @@
                             <!-- NIVEAU -->
                             <div
                                 class="flex items-center gap-2 bg-red-900/20 px-4 py-1.5 rounded-full border border-red-900/30">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-red-500">Niveau</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-red-500"
+                                    data-i18n="level"></span>
                                 <input type="number" id="char-level"
                                     class="w-12 bg-transparent border-none p-0 text-sm font-black text-center focus:ring-0"
                                     oninput="updateLevel(this.value); calculateSpellStats();">
@@ -275,34 +281,47 @@
 
                     <!-- RESTE DE LA LIGNE (Vitesse, CA, Maîtrise, etc.) -->
                     <div class="flex gap-4 w-full md:w-auto">
+                        <!-- VITESSE -->
                         <div
                             class="bg-black/40 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
-                            <span
-                                class="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Vitesse</span>
+                            <span class="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1"
+                                data-i18n="speed">Vitesse</span>
                             <div class="flex items-baseline gap-1">
                                 <input type="number" id="speed" step="0.5"
                                     class="hp-input !text-3xl !w-20 text-center font-black text-emerald-500 bg-transparent border-none"
-                                    onchange="window.updateField('speed', parseFloat(this.value)||0);">
-                                <span class="text-[10px] font-bold text-zinc-600 uppercase">m</span>
+                                    onchange="window.updateSpeedValue(parseFloat(this.value) || 0);">
+                                <span id="speed-unit" class="text-[10px] font-bold text-zinc-600 uppercase"
+                                    data-i18n="speedUnit">m</span>
                             </div>
                         </div>
+
+                        <!-- CA -->
                         <div class="stat-box flex-1 md:w-28 border-gray-400/30 bg-gray-400/5">
-                            <div class="text-[8px] uppercase text-gray-400 font-black tracking-widest">CA</div>
+                            <div class="text-[8px] uppercase text-gray-400 font-black tracking-widest" data-i18n="ac">
+                            </div>
                             <input type="number" id="char-ac"
                                 class="w-full text-center bg-transparent border-none text-3xl font-black text-white p-0"
                                 onchange="window.updateField('ac', parseInt(this.value)||10);renderAll();">
                         </div>
+
+                        <!-- MAÎTRISE -->
                         <div class="stat-box flex-1 md:w-28 border-yellow-600/30 bg-yellow-600/5">
-                            <div class="text-[8px] uppercase text-yellow-500 font-black tracking-widest">Maîtrise</div>
+                            <div class="text-[8px] uppercase text-yellow-500 font-black tracking-widest"
+                                data-i18n="mastery"></div>
                             <div id="prof-bonus" class="text-3xl font-black text-white">+2</div>
                         </div>
+
+                        <!-- PERCEPTION -->
                         <div class="stat-box flex-1 md:w-28 border-blue-600/30 bg-blue-600/5">
-                            <div class="text-[8px] uppercase text-blue-400 font-black tracking-widest">Perception</div>
+                            <div class="text-[8px] uppercase text-blue-400 font-black tracking-widest"
+                                data-i18n="perception"></div>
                             <div id="passive-perception" class="text-3xl font-black text-white">10</div>
                         </div>
+
+                        <!-- INITIATIVE -->
                         <div class="stat-box flex-1 md:w-28 border-purple-600/30 bg-purple-600/5">
-                            <div class="text-[8px] uppercase text-purple-400 font-black tracking-widest">Initiative
-                            </div>
+                            <div class="text-[8px] uppercase text-purple-400 font-black tracking-widest"
+                                data-i18n="initiative"></div>
                             <div id="init-bonus" class="text-3xl font-black text-white">+0</div>
                         </div>
                     </div>
@@ -311,9 +330,10 @@
 
             <div class="mb-4">
                 <div class="flex justify-between items-end mb-1 px-1">
-                    <span class="text-[9px] uppercase font-black tracking-widest text-red-500/80 italic">Seuil de
-                        Mort</span>
-                    <span id="death-status" class="text-[9px] font-black uppercase text-zinc-500 italic">Stable</span>
+                    <span class="text-[9px] uppercase font-black tracking-widest text-red-500/80 italic"
+                        data-i18n="deathThreshold"></span>
+                    <span id="death-status" class="text-[9px] font-black uppercase text-zinc-500 italic"
+                        data-i18n="stable"></span>
                 </div>
 
                 <div class="flex gap-3 items-center">
@@ -1612,6 +1632,167 @@
                     class="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-500 transition uppercase tracking-wider shadow-lg shadow-blue-900/20">
                     Enregistrer le mot de passe
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE GESTION DU BASTION -->
+    <div id="bastion-manager-modal"
+        class="hidden fixed inset-0 z-[130] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div
+            class="bg-zinc-900 border border-amber-600/30 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+
+            <!-- En-tête -->
+            <div class="p-5 border-b border-zinc-800 bg-zinc-950 flex justify-between items-center">
+                <div>
+                    <h3
+                        class="text-amber-500 font-black uppercase tracking-widest text-lg italic flex items-center gap-2">
+                        🏰 Plan & Extension du Bastion
+                    </h3>
+                    <p class="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                        Cliquez sur un emplacement pour aménager ou modifier une pièce
+                    </p>
+                </div>
+                <button onclick="closeBastionModal()"
+                    class="text-zinc-500 hover:text-white text-2xl transition">✕</button>
+            </div>
+
+            <!-- Zone Grille Interactive -->
+            <div class="p-6 overflow-auto flex-1 flex justify-center bg-black/40">
+                <div id="bastion-grid"
+                    class="grid grid-cols-8 gap-1.5 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[700px] aspect-[8/5]">
+                    <!-- Les 40 cases seront générées dynamiquement par le JS -->
+                </div>
+            </div>
+
+            <div class="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-end">
+                <button onclick="closeBastionModal()"
+                    class="px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-xl uppercase transition">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE CRÉATION & ÉDITION DE SALLE PERSONNALISÉE -->
+    <div id="bastion-room-modal"
+        class="hidden fixed inset-0 z-[140] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-amber-500/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h4 id="bastion-room-modal-title"
+                class="text-amber-400 font-black uppercase tracking-wider text-sm border-b border-zinc-800 pb-3">
+                Configuration de la Salle
+            </h4>
+
+            <div class="space-y-3">
+                <!-- Sélection du Nom / Type de Salle -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Type de Salle</label>
+                    <select id="bastion-room-name" onchange="window.onBastionRoomTypeChange(this.value)"
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
+                        <option value="">-- Choisir une salle --</option>
+
+                        <optgroup label="── Salles Normales ──">
+                            <option value="Chambre" data-type="normal" data-color="purple">Chambre</option>
+                            <option value="Cuisines" data-type="normal" data-color="amber">Cuisines</option>
+                            <option value="Salle à manger" data-type="normal" data-color="amber">Salle à manger</option>
+                            <option value="Cour" data-type="normal" data-color="emerald">Cour</option>
+                            <option value="Rangement" data-type="normal" data-color="zinc">Rangement</option>
+                            <option value="Salle de réception" data-type="normal" data-color="purple">Salle de réception
+                            </option>
+                        </optgroup>
+
+                        <optgroup label="── Salles Spéciales ──">
+                            <option value="Armurerie" data-type="special" data-color="red">Armurerie ✨</option>
+                            <option value="Atelier" data-type="special" data-color="amber">Atelier ✨</option>
+                            <option value="Baraquement" data-type="special" data-color="red">Baraquement ✨</option>
+                            <option value="Bibliothèque" data-type="special" data-color="blue">Bibliothèque ✨</option>
+                            <option value="Entrepôt" data-type="special" data-color="zinc">Entrepôt ✨</option>
+                            <option value="Étude arcanique" data-type="special" data-color="blue">Étude arcanique ✨
+                            </option>
+                            <option value="Forge" data-type="special" data-color="amber">Forge ✨</option>
+                            <option value="Jardin" data-type="special" data-color="emerald">Jardin ✨</option>
+                            <option value="Sanctuaire" data-type="special" data-color="amber">Sanctuaire ✨</option>
+                            <option value="Cercle de téléportation" data-type="special" data-color="purple">Cercle de
+                                téléportation ✨</option>
+                            <option value="Écurie" data-type="special" data-color="emerald">Écurie ✨</option>
+                            <option value="Laboratoire" data-type="special" data-color="blue">Laboratoire ✨</option>
+                            <option value="Sacristie" data-type="special" data-color="amber">Sacristie ✨</option>
+                            <option value="Salle de jeux" data-type="special" data-color="purple">Salle de jeux ✨
+                            </option>
+                            <option value="Salle des trophées" data-type="special" data-color="amber">Salle des trophées
+                                ✨</option>
+                            <option value="Scriptorium" data-type="special" data-color="blue">Scriptorium ✨</option>
+                            <option value="Serre" data-type="special" data-color="emerald">Serre ✨</option>
+                            <option value="Terrain d'entraînement" data-type="special" data-color="red">Terrain
+                                d'entraînement ✨</option>
+                            <option value="Théâtre" data-type="special" data-color="purple">Théâtre ✨</option>
+                            <option value="Archives" data-type="special" data-color="blue">Archives ✨</option>
+                            <option value="Estaminet" data-type="special" data-color="amber">Estaminet ✨</option>
+                            <option value="Ménagerie" data-type="special" data-color="emerald">Ménagerie ✨</option>
+                            <option value="Observatoire" data-type="special" data-color="blue">Observatoire ✨</option>
+                            <option value="Reliquaire" data-type="special" data-color="amber">Reliquaire ✨</option>
+                            <option value="Salle de méditation" data-type="special" data-color="blue">Salle de
+                                méditation ✨</option>
+                            <option value="Conseil de guerre" data-type="special" data-color="red">Conseil de guerre ✨
+                            </option>
+                            <option value="Demi-plan" data-type="special" data-color="purple">Demi-plan ✨</option>
+                            <option value="Manoir de guilde" data-type="special" data-color="purple">Manoir de guilde ✨
+                            </option>
+                            <option value="Retraite sacrée" data-type="special" data-color="amber">Retraite sacrée ✨
+                            </option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- Résumé du tracé -->
+                <div class="bg-zinc-950 p-3 border border-zinc-800 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[10px] font-black uppercase text-zinc-400">Emprise au sol</span>
+                        <span id="bastion-room-summary" class="text-amber-400 text-xs font-bold">1 case sélectionnée
+                            (2.25 m²)</span>
+                    </div>
+                    <button type="button" onclick="window.reselectBastionShape()"
+                        class="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold px-2 py-1 rounded uppercase transition">
+                        Modifier la forme
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Nombre d'attendants /
+                        Serviteurs</label>
+                    <input type="number" id="bastion-room-attendants" min="0" value="0"
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Teinte Visuelle</label>
+                    <select id="bastion-room-color"
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
+                        <option value="amber">Ambre / Artisanat & Métal</option>
+                        <option value="blue">Bleu / Arcanes & Savoir</option>
+                        <option value="red">Rouge / Militaire & Combat</option>
+                        <option value="emerald">Émeraude / Nature & Faune</option>
+                        <option value="purple">Violet / Arcanes Supérieurs & Luxe</option>
+                        <option value="zinc">Gris / Logistique & Stockage</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-4 border-t border-zinc-800">
+                <button onclick="clearBastionCell()"
+                    class="px-4 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 rounded-xl text-xs font-bold uppercase transition">
+                    Supprimer
+                </button>
+                <div class="flex-1 flex justify-end gap-2">
+                    <button onclick="closeBastionRoomModal()"
+                        class="px-4 py-2 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 rounded-xl text-xs font-bold uppercase transition">
+                        Annuler
+                    </button>
+                    <button onclick="saveBastionCell()"
+                        class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black uppercase transition">
+                        Enregistrer
+                    </button>
+                </div>
             </div>
         </div>
     </div>

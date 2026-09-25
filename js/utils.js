@@ -1,7 +1,5 @@
 import { SUBCLASSES_TRANSLATIONS, translateSubclass } from './translations.js';
 
-export { SUBCLASSES_TRANSLATIONS, translateSubclass };
-
 export const SKILLS_LIST = [
     { n: "Athlétisme", s: "Force" }, { n: "Acrobaties", s: "Dextérité" }, { n: "Escamotage", s: "Dextérité" }, { n: "Discrétion", s: "Dextérité" },
     { n: "Arcanes", s: "Intelligence" }, { n: "Histoire", s: "Intelligence" }, { n: "Investigation", s: "Intelligence" }, { n: "Nature", s: "Intelligence" }, { n: "Religion", s: "Intelligence" },

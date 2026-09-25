@@ -3,39 +3,54 @@ import { supabaseClient } from './config.js';
 import { getInitialState } from './state.js';
 import { switchTab } from './ui-modals.js';
 
+let saveTimeout = null;
+let cachedUser = null;
 /**
  * Sauvegarde l'état actuel du personnage (Update ou Insert via upsert)
  */
 export async function saveToSupabase() {
-    // On vérifie d'abord si l'utilisateur est connecté
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
-
-    if (!window.currentCharacterId) {
-        return;
+    // 1. Annule le timer précédent si une nouvelle modification survient
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
     }
 
-    // window.state est global, on l'utilise pour le payload
-    const payload = {
-        user_id: user.id,
-        nom: window.state.nom,
-        data: window.state
-    };
+    // 2. Programme l'exécution unique de la sauvegarde après 800ms d'inactivité
+    saveTimeout = setTimeout(async () => {
+        if (!window.currentCharacterId || !window.state) return;
 
-    // Si on a déjà un ID de perso, on l'ajoute pour faire un UPDATE
-    if (window.currentCharacterId) {
-        payload.id = window.currentCharacterId;
-    }
+        try {
+            // Récupère l'utilisateur en cache pour éviter une requête Auth inutile
+            if (!cachedUser) {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) return;
+                cachedUser = user;
+            }
 
-    const { error } = await supabaseClient
-        .from('personnages')
-        .upsert(payload);
+            const payload = {
+                id: window.currentCharacterId,
+                user_id: cachedUser.id,
+                nom: window.state.nom || 'Sans nom',
+                data: window.state,
+                updated_at: new Date().toISOString()
+            };
 
-    if (error) {
-        console.error("Erreur sauvegarde :", error.message);
-    } else {
-        console.log("Sauvegarde réussie.");
-    }
+            const { error } = await supabaseClient
+                .from('personnages')
+                .upsert(payload);
+
+            if (error) {
+                console.error("Erreur sauvegarde :", error.message);
+                // Si la session a expiré, on invalide le cache utilisateur
+                if (error.message.includes('JWT') || error.status === 401) {
+                    cachedUser = null;
+                }
+            } else {
+                console.log("Sauvegarde réussie.");
+            }
+        } catch (err) {
+            console.error("Erreur réseau/sauvegarde :", err);
+        }
+    }, 800);
 }
 
 export function sanitizeState(state) {

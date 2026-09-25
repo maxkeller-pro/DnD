@@ -1,15 +1,20 @@
 import { getInitialState, APP_VERSION } from './js/state.js';
 import { handleLogin, handleSignup, handleLogout, checkUser, openResetPasswordModal, closeResetPasswordModal, handleSendResetEmail, handleUpdatePassword } from './js/auth.js';
 import { saveToSupabase, loadUserData, deleteCharacter, createNewCharacter, selectCharacter, loadCharactersList } from './js/api.js';
-import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList } from './js/ui-render.js';
+import { renderAll, renderStatsList, renderSavesList, renderSkillsList, renderAttaques, renderCapacites, renderMountActions, renderMount, renderBag, renderSpellsList, renderSpellSlots, renderBlessures, renderInventoryList, renderMountInventory, renderExtras, renderPortrait, renderMountPortrait, renderNotes, renderInspiration, renderTransformationButton, renderWildShapeList, renderBastionGrid } from './js/ui-render.js';
 import { openModal, closeModal, closeMountModal, openMountModal, handleMountImageUpload, switchTab, saveData } from './js/ui-modals.js';
-import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney, SUBCLASSES_BY_CLASS, translateSubclass, TITAN_SPELLS_BY_LEVEL } from './js/utils.js';
+import { getProf, SKILLS_LIST, BAG_TYPES, CATALOGUE_SURVIE, subtractMoney, SUBCLASSES_BY_CLASS, TITAN_SPELLS_BY_LEVEL } from './js/utils.js';
+import { convertSpeed, convertFeetToMeters, UI_TRANSLATIONS, translateSubclass } from './js/translations.js';
 import {  } from './js/auth.js';
 
 // --- DONNÉES DE RÉFÉRENCE & ÉTAT GLOBAL ---
 let filterPreparedOnly = false;
 let isBackingToSelection = false;
 let currentPrepFilter = 'all';
+
+window.customSelectedCells = [];
+window.isDrawingMode = false;
+let currentEditingRoomIndex = null;
 
 window.currentCharacterId = null;
 window.state = getInitialState();
@@ -1174,6 +1179,10 @@ window.onClassChange = function(newClass) {
     }
 };
 
+window.openBastionManager = function(){
+
+}
+
 window.onSubclassChange = function(newSubclass) {
     const state = window.state;
     if (!state) return;
@@ -1217,22 +1226,55 @@ window.setGlobalLanguage = function(lang) {
         }
     }
 
-    // 3. Si un personnage est actuellement chargé, traduis la sous-classe
+    // 3. Traduction dynamique automatique de tous les champs avec data-i18n
+    const dict = UI_TRANSLATIONS[newLang] || UI_TRANSLATIONS.FR;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+            el.innerText = dict[key];
+        }
+    });
+
+    // 4. Si un personnage est actuellement chargé
     if (window.state) {
-        window.state.lang = newLang; // Optionnel : enregistre la langue dans le state du perso
+        window.state.lang = newLang;
         
+        // Traduction de la sous-classe
         if (window.state.subclasse && typeof translateSubclass === 'function') {
             const translated = translateSubclass(window.state.subclasse, newLang);
             if (translated && translated !== window.state.subclasse) {
                 window.state.subclasse = translated;
             }
         }
+
+        // Conversion & Mise à jour du champ Vitesse (Mètres <-> Feet)
+        const speedInput = document.getElementById('speed');
+        const speedUnitEl = document.getElementById('speed-unit');
+
+        const baseSpeedInMeters = window.state.speed || 9;
+        const converted = convertSpeed(baseSpeedInMeters, newLang);
+
+        if (speedInput) speedInput.value = converted.val;
+        if (speedUnitEl) speedUnitEl.innerText = converted.unit;
     }
 
-    // 4. Relance le rendu de l'interface
+    // 5. Relance le rendu de l'interface
     if (typeof window.renderAll === 'function') {
         window.renderAll(true);
     }
+};
+
+// Fonction pour enregistrer la vitesse saisie par l'utilisateur
+window.updateSpeedValue = function(inputValue) {
+    const currentLang = localStorage.getItem('dnd_app_lang') || 'FR';
+    
+    // Si l'utilisateur saisit en feet (mode EN), on convertit en mètres pour le state
+    let metersValue = inputValue;
+    if (currentLang === 'EN') {
+        metersValue = convertFeetToMeters(inputValue);
+    }
+
+    window.updateField('speed', metersValue);
 };
 
 window.updateClassSaves = function(className) {
@@ -1290,6 +1332,260 @@ window.backToSelection = async function() {
     }
 };
 
+window.openBastionManager = function() {
+    if (!window.state) return;
+    
+    if (!window.state.bastion) {
+        window.state.bastion = { rooms: [] };
+    } else if (!window.state.bastion.rooms) {
+        window.state.bastion.rooms = [];
+    }
+
+    if (typeof renderBastionGrid === 'function') {
+        renderBastionGrid();
+    }
+    document.getElementById('bastion-manager-modal')?.classList.remove('hidden');
+};
+
+window.closeBastionModal = function() {
+    document.getElementById('bastion-manager-modal')?.classList.add('hidden');
+    window.cancelCustomShape();
+};
+
+// Clic sur une case VIDE : Ajout/Retrait dans le tracé avec contrôle de contiguïté
+// Clic sur une case VIDE
+window.openNewBastionRoomModal = function(x, y) {
+    if (!window.isDrawingMode) {
+        // Premier clic : début du tracé
+        window.isDrawingMode = true;
+        window.customSelectedCells = [{ x, y }];
+    } else {
+        // Clics suivants : bascule / ajout
+        const existingIndex = window.customSelectedCells.findIndex(c => c.x === x && c.y === y);
+
+        if (existingIndex !== -1) {
+            if (window.customSelectedCells.length > 1) {
+                window.customSelectedCells.splice(existingIndex, 1);
+            }
+        } else {
+            // Contrôle de contiguïté
+            const isAdjacent = window.customSelectedCells.some(cell => {
+                const dx = Math.abs(cell.x - x);
+                const dy = Math.abs(cell.y - y);
+                return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            });
+
+            if (!isAdjacent) {
+                alert("Les cases d'une même pièce doivent être strictement accolées.");
+                return;
+            }
+
+            window.customSelectedCells.push({ x, y });
+        }
+    }
+
+    // Rafraîchit immédiatement la grille pour afficher la surbrillance
+    if (typeof renderBastionGrid === 'function') {
+        renderBastionGrid();
+    }
+};
+
+// Valide le tracé et ouvre la modale de configuration
+window.confirmCustomShape = function() {
+    if (customSelectedCells.length === 0) return;
+
+    currentEditingRoomIndex = null;
+    const count = customSelectedCells.length;
+    const surface = (count * 2.25).toFixed(1);
+
+    const titleEl = document.getElementById('bastion-room-modal-title');
+    if (titleEl) titleEl.innerText = `Nouvelle Salle (${count} case${count > 1 ? 's' : ''})`;
+
+    const summaryEl = document.getElementById('bastion-room-summary');
+    if (summaryEl) summaryEl.innerText = `${count} case${count > 1 ? 's' : ''} (${surface} m²)`;
+
+    document.getElementById('bastion-room-name').value = '';
+    document.getElementById('bastion-room-attendants').value = 0;
+    document.getElementById('bastion-room-color').value = 'amber';
+
+    document.getElementById('bastion-room-modal')?.classList.remove('hidden');
+};
+
+// Annule le tracé en cours
+window.cancelCustomShape = function() {
+    isDrawingMode = false;
+    customSelectedCells = [];
+    if (typeof renderBastionGrid === 'function') renderBastionGrid();
+};
+
+// Clic sur une salle EXISTANTE (Édition)
+window.openBastionRoomModal = function(roomIndex) {
+    if (isDrawingMode) return; // Priorité au tracé
+
+    currentEditingRoomIndex = roomIndex;
+    const room = window.state.bastion?.rooms?.[roomIndex];
+    if (!room) return;
+
+    const count = room.cells ? room.cells.length : (room.span ? room.span * room.span : 1);
+    const surface = (count * 2.25).toFixed(1);
+
+    const titleEl = document.getElementById('bastion-room-modal-title');
+    if (titleEl) titleEl.innerText = `Édition : ${room.name}`;
+
+    const summaryEl = document.getElementById('bastion-room-summary');
+    if (summaryEl) summaryEl.innerText = `${count} case${count > 1 ? 's' : ''} (${surface} m²)`;
+
+    document.getElementById('bastion-room-name').value = room.name || '';
+    document.getElementById('bastion-room-attendants').value = room.attendants || 0;
+    document.getElementById('bastion-room-color').value = room.color || 'amber';
+
+    document.getElementById('bastion-room-modal')?.classList.remove('hidden');
+};
+
+window.closeBastionRoomModal = function() {
+    document.getElementById('bastion-room-modal')?.classList.add('hidden');
+    if (currentEditingRoomIndex === null) {
+        window.cancelCustomShape();
+    } else {
+        currentEditingRoomIndex = null;
+    }
+};
+
+// Enregistrement final
+window.saveBastionCell = function() {
+    const selectEl = document.getElementById('bastion-room-name');
+    const name = selectEl ? selectEl.value : '';
+    
+    // Détecte si l'option choisie appartient au groupe des salles spéciales
+    const selectedOption = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
+    const isSpecial = selectedOption ? selectedOption.getAttribute('data-type') === 'special' : false;
+
+    const attendants = parseInt(document.getElementById('bastion-room-attendants')?.value) || 0;
+    const color = document.getElementById('bastion-room-color')?.value || 'amber';
+
+    if (!name) {
+        alert("Veuillez choisir un type de salle.");
+        return;
+    }
+
+    if (!window.state.bastion) window.state.bastion = { rooms: [] };
+    if (!window.state.bastion.rooms) window.state.bastion.rooms = [];
+
+    const selectedCells = window.customSelectedCells || [];
+
+    if (currentEditingRoomIndex !== null) {
+        // Modification d'une salle existante
+        window.state.bastion.rooms[currentEditingRoomIndex] = {
+            ...window.state.bastion.rooms[currentEditingRoomIndex],
+            name,
+            attendants,
+            color,
+            isSpecial
+        };
+    } else if (selectedCells.length > 0) {
+        // Création d'une nouvelle salle multi-cases
+        window.state.bastion.rooms.push({
+            name,
+            attendants,
+            color,
+            isSpecial,
+            cells: [...selectedCells]
+        });
+    }
+
+    window.isDrawingMode = false;
+    window.customSelectedCells = [];
+    closeBastionRoomModal();
+
+    if (typeof renderBastionGrid === 'function') renderBastionGrid();
+    if (typeof window.saveToSupabase === 'function') window.saveToSupabase();
+};
+
+// Suppression
+window.clearBastionCell = function() {
+    if (currentEditingRoomIndex !== null && window.state.bastion?.rooms) {
+        window.state.bastion.rooms.splice(currentEditingRoomIndex, 1);
+    }
+    closeBastionRoomModal();
+
+    if (typeof renderBastionGrid === 'function') renderBastionGrid();
+    if (typeof window.saveToSupabase === 'function') window.saveToSupabase();
+};
+
+// --- Drag & Drop pour les pièces libres ---
+
+window.handleBastionDragStart = function(event, roomIndex) {
+    event.dataTransfer.setData('text/plain', roomIndex.toString());
+    event.dataTransfer.effectAllowed = 'move';
+};
+
+window.handleBastionDragOver = function(event) {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    return false;
+};
+
+window.handleBastionDrop = function(event, targetX, targetY) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rawIndex = event.dataTransfer.getData('text/plain');
+    if (rawIndex === '' || rawIndex === null) return;
+
+    const roomIndex = parseInt(rawIndex, 10);
+    const room = window.state.bastion?.rooms?.[roomIndex];
+    if (!room || !room.cells || room.cells.length === 0) return;
+
+    const COLS = 12;
+    const ROWS = 12;
+
+    // Calcul du décalage relatif par rapport à la 1re case de la pièce
+    const originCell = room.cells[0];
+    const dx = targetX - originCell.x;
+    const dy = targetY - originCell.y;
+
+    // Calcul des nouvelles positions théoriques
+    const newCells = room.cells.map(c => ({ x: c.x + dx, y: c.y + dy }));
+
+    // 1. CONTRÔLE DES BORDURES
+    const isOutOfBounds = newCells.some(c => c.x < 0 || c.x >= COLS || c.y < 0 || c.y >= ROWS);
+    if (isOutOfBounds) return;
+
+    // 2. CONTRÔLE DES CHEVAUCHEMENTS
+    const otherRooms = window.state.bastion.rooms.filter((_, idx) => idx !== roomIndex);
+    const isOverlapping = newCells.some(newCell => 
+        otherRooms.some(otherRoom => 
+            (otherRoom.cells || []).some(oc => oc.x === newCell.x && oc.y === newCell.y)
+        )
+    );
+
+    if (isOverlapping) return;
+
+    // Application
+    room.cells = newCells;
+
+    if (typeof renderBastionGrid === 'function') renderBastionGrid();
+    if (typeof window.saveToSupabase === 'function') window.saveToSupabase();
+};
+
+window.reselectBastionShape = function() {
+    alert('pas encore intégré');
+};
+
+// Auto-présélection de la couleur et du type lors du choix d'une salle
+window.onBastionRoomTypeChange = function(roomName) {
+    const selectEl = document.getElementById('bastion-room-name');
+    if (!selectEl) return;
+
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    if (!selectedOption) return;
+
+    const defaultColor = selectedOption.getAttribute('data-color');
+    if (defaultColor) {
+        document.getElementById('bastion-room-color').value = defaultColor;
+    }
+};
+
 // --- INITIALISATION AU CHARGEMENT DE LA PAGE ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1304,6 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     checkUser(loadCharactersList);
 });
+
 
 // --- ATTACHEMENTS GLOBAUX SUR WINDOW ---
 
@@ -1362,6 +1659,9 @@ window.renderMountPortrait = renderMountPortrait;
 window.renderMountInventory = renderMountInventory;
 window.renderMountActions = renderMountActions;
 window.renderMount = renderMount;
+
+// Bastion
+window.renderBastionGrid = renderBastionGrid;
 
 // Utilitaires
 window.BAG_TYPES = BAG_TYPES;

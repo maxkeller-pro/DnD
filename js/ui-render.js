@@ -1,5 +1,6 @@
 // js/ui-render.js
-import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, getSubclassesByClass, translateSubclass, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
+import { getMod, getProf, SKILLS_LIST, statsOrder, BAG_TYPES, CATALOGUE_SURVIE, getSubclassesByClass, TITAN_SPELLS_BY_LEVEL, getUnlockedTitanSpells } from './utils.js';
+import { translateSubclass } from './translations.js';
 import { saveToSupabase } from './api.js';
 
 export function updateSubclassLangButtons(currentLang) {
@@ -99,6 +100,18 @@ export function renderAll(shouldSave = true) {
     const transformationZone = document.getElementById('transformation-zone');
     if (transformationZone) {
         isDruid ? transformationZone.classList.remove('hidden') : transformationZone.classList.add('hidden');
+    }
+
+    // --- LOGIQUE BASTION : AFFICHAGE CONDITIONNEL ---
+    const bastionButton = document.getElementById('btn-bastion-manager');
+    if (bastionButton) {
+        // Condition : débloqué à partir du niveau 5 (Règles D&D 2024)
+        // Si tu veux qu'il soit toujours visible pour tous, mets simplement : bastionButton.classList.remove('hidden');
+        if (level >= 5) {
+            bastionButton.classList.remove('hidden');
+        } else {
+            bastionButton.classList.add('hidden');
+        }
     }
 
     // --- LOGIQUE DE SUBSTITUTION (FORME SAUVAGE / TITAN) ---
@@ -209,6 +222,7 @@ export function renderAll(shouldSave = true) {
     renderInspiration();
     renderMountActions();
     renderBag();
+    renderBastionGrid();
 
     if (isDruid) {
         renderTransformationButton();
@@ -1637,4 +1651,134 @@ export function renderWildShapeList() {
             </div>
         `;
     }).join('');
+}
+
+
+export function renderBastionGrid() {
+    const gridContainer = document.getElementById('bastion-grid');
+    if (!gridContainer || !window.state) return;
+
+    const COLS = 12;
+    const ROWS = 12;
+    const TOTAL_CELLS = COLS * ROWS;
+
+    if (!window.state.bastion) window.state.bastion = { rooms: [] };
+
+    gridContainer.className = "grid grid-cols-12 grid-rows-12 gap-1 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[720px] aspect-square overflow-auto select-none";
+
+// Styles des teintes pour Salles Normales (Rendu contrasté pour Zinc)
+    const colorClasses = {
+        amber: 'bg-amber-950/70 border-amber-600/40 text-amber-200',
+        blue: 'bg-blue-950/70 border-blue-600/40 text-blue-200',
+        red: 'bg-red-950/70 border-red-600/40 text-red-200',
+        emerald: 'bg-emerald-950/70 border-emerald-600/40 text-emerald-200',
+        purple: 'bg-purple-950/70 border-purple-600/40 text-purple-200',
+        zinc: 'bg-slate-700/80 border-slate-400/70 text-slate-100 shadow-inner' // Fond acier clair + bordure vive
+    };
+
+    // Styles distinctifs pour Salles Spéciales (Bordures renforcées + lueur thématique)
+    const specialColorClasses = {
+        amber: 'bg-amber-950/90 border-amber-400 text-amber-100 shadow-[0_0_10px_rgba(251,191,36,0.25)]',
+        blue: 'bg-blue-950/90 border-cyan-400 text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,0.25)]',
+        red: 'bg-red-950/90 border-red-400 text-red-100 shadow-[0_0_10px_rgba(248,113,113,0.25)]',
+        emerald: 'bg-emerald-950/90 border-emerald-400 text-emerald-100 shadow-[0_0_10px_rgba(52,211,153,0.25)]',
+        purple: 'bg-purple-950/90 border-fuchsia-400 text-fuchsia-100 shadow-[0_0_10px_rgba(232,121,249,0.25)]',
+        zinc: 'bg-slate-800 border-slate-300 text-white shadow-[0_0_10px_rgba(203,213,225,0.3)]' // Éclat argenté / platine
+    };
+
+    const occupiedMap = new Map();
+    const rooms = window.state.bastion.rooms || [];
+
+    // Mapping des cases occupées
+    rooms.forEach((room, roomIdx) => {
+        const cells = room.cells || [];
+        cells.forEach((cell, cellIdx) => {
+            occupiedMap.set(`${cell.x},${cell.y}`, {
+                roomIdx,
+                room,
+                isMain: cellIdx === 0
+            });
+        });
+    });
+
+    const selectedCells = window.customSelectedCells || [];
+    const isDrawing = window.isDrawingMode || false;
+
+    let html = '';
+
+    for (let index = 0; index < TOTAL_CELLS; index++) {
+        const x = index % COLS;
+        const y = Math.floor(index / COLS);
+        const colStart = x + 1;
+        const rowStart = y + 1;
+
+        const key = `${x},${y}`;
+        const occupied = occupiedMap.get(key);
+        const isSelectedInDraft = selectedCells.some(c => c.x === x && c.y === y);
+
+        if (isSelectedInDraft) {
+            // Case en cours de tracé
+            html += `
+                <div style="grid-column: ${colStart}; grid-row: ${rowStart};"
+                     onclick="openNewBastionRoomModal(${x}, ${y})"
+                     class="border-2 border-amber-400 bg-amber-500/40 rounded-lg cursor-pointer flex items-center justify-center transition aspect-square animate-pulse z-20">
+                    <span class="text-amber-200 font-bold text-xs">✓</span>
+                </div>
+            `;
+        } else if (occupied) {
+            // Pièce enregistrée
+            const room = occupied.room;
+            const theme = room.isSpecial ? specialColorClasses : colorClasses;
+            const colorClass = theme[room.color] || theme.amber;
+
+            html += `
+                <div draggable="true"
+                     ondragstart="window.handleBastionDragStart(event, ${occupied.roomIdx})"
+                     onclick="openBastionRoomModal(${occupied.roomIdx})"
+                     style="grid-column: ${colStart}; grid-row: ${rowStart};"
+                     class="${colorClass} border rounded-md p-1 cursor-grab active:cursor-grabbing flex flex-col justify-between hover:brightness-125 transition relative aspect-square">
+                    ${occupied.isMain ? `
+                        <div class="absolute inset-0 p-1 flex flex-col justify-between pointer-events-none z-10">
+                            <span class="text-[9px] font-black uppercase tracking-wider line-clamp-1 leading-none text-white drop-shadow flex items-center gap-0.5">
+                                ${room.isSpecial ? '✨ ' : ''}${room.name}
+                            </span>
+                            <span class="text-[8px] font-bold text-amber-300">👥 ${room.attendants || 0}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            // Case vide (Cible de dépôt / drop)
+            html += `
+                <div style="grid-column: ${colStart}; grid-row: ${rowStart};"
+                     ondragover="return window.handleBastionDragOver(event)"
+                     ondragenter="return window.handleBastionDragOver(event)"
+                     ondrop="window.handleBastionDrop(event, ${x}, ${y})"
+                     onclick="openNewBastionRoomModal(${x}, ${y})"
+                     class="border border-zinc-800/60 bg-zinc-900/20 hover:bg-zinc-800/50 hover:border-zinc-700 rounded-lg cursor-pointer flex items-center justify-center transition aspect-square">
+                    <span class="text-zinc-700 text-[10px] font-mono">+</span>
+                </div>
+            `;
+        }
+    }
+
+    gridContainer.innerHTML = html;
+
+    // Bandeau flottant de confirmation du tracé
+    let draftBar = document.getElementById('bastion-draft-bar');
+    if (isDrawing && selectedCells.length > 0) {
+        if (!draftBar) {
+            draftBar = document.createElement('div');
+            draftBar.id = 'bastion-draft-bar';
+            draftBar.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 border border-amber-500/60 p-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[150]';
+            document.body.appendChild(draftBar);
+        }
+        draftBar.innerHTML = `
+            <span class="text-xs text-amber-300 font-bold">${selectedCells.length} case(s) sélectionnée(s)</span>
+            <button onclick="window.confirmCustomShape()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black uppercase transition">Valider la forme</button>
+            <button onclick="window.cancelCustomShape()" class="px-3 py-1.5 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 rounded-xl text-xs font-bold uppercase transition">Annuler</button>
+        `;
+    } else if (draftBar) {
+        draftBar.remove();
+    }
 }
