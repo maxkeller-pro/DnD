@@ -1666,14 +1666,14 @@ export function renderBastionGrid() {
 
     gridContainer.className = "grid grid-cols-12 grid-rows-12 gap-1 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[720px] aspect-square overflow-auto select-none";
 
-// Styles des teintes pour Salles Normales (Rendu contrasté pour Zinc)
+    // Styles des teintes pour Salles Normales (Rendu contrasté pour Zinc)
     const colorClasses = {
         amber: 'bg-amber-950/70 border-amber-600/40 text-amber-200',
         blue: 'bg-blue-950/70 border-blue-600/40 text-blue-200',
         red: 'bg-red-950/70 border-red-600/40 text-red-200',
         emerald: 'bg-emerald-950/70 border-emerald-600/40 text-emerald-200',
         purple: 'bg-purple-950/70 border-purple-600/40 text-purple-200',
-        zinc: 'bg-slate-700/80 border-slate-400/70 text-slate-100 shadow-inner' // Fond acier clair + bordure vive
+        zinc: 'bg-slate-700/80 border-slate-400/70 text-slate-100 shadow-inner'
     };
 
     // Styles distinctifs pour Salles Spéciales (Bordures renforcées + lueur thématique)
@@ -1683,7 +1683,16 @@ export function renderBastionGrid() {
         red: 'bg-red-950/90 border-red-400 text-red-100 shadow-[0_0_10px_rgba(248,113,113,0.25)]',
         emerald: 'bg-emerald-950/90 border-emerald-400 text-emerald-100 shadow-[0_0_10px_rgba(52,211,153,0.25)]',
         purple: 'bg-purple-950/90 border-fuchsia-400 text-fuchsia-100 shadow-[0_0_10px_rgba(232,121,249,0.25)]',
-        zinc: 'bg-slate-800 border-slate-300 text-white shadow-[0_0_10px_rgba(203,213,225,0.3)]' // Éclat argenté / platine
+        zinc: 'bg-slate-800 border-slate-300 text-white shadow-[0_0_10px_rgba(203,213,225,0.3)]'
+    };
+
+    // Symboles des marqueurs d'aménagement
+    const markerIcons = {
+        stair: '🪜',
+        chest: '💎',
+        trap: '⚠️',
+        altar: '✝️',
+        portal: '🌀'
     };
 
     const occupiedMap = new Map();
@@ -1693,10 +1702,16 @@ export function renderBastionGrid() {
     rooms.forEach((room, roomIdx) => {
         const cells = room.cells || [];
         cells.forEach((cell, cellIdx) => {
+            // Affichage du marqueur sur la case exacte sélectionnée (ou par défaut sur la 1ère case)
+            const isMarkerPos = room.markerPos 
+                ? (room.markerPos.x === cell.x && room.markerPos.y === cell.y)
+                : cellIdx === 0;
+
             occupiedMap.set(`${cell.x},${cell.y}`, {
                 roomIdx,
                 room,
-                isMain: cellIdx === 0
+                isMain: cellIdx === 0,
+                isMarkerCell: isMarkerPos
             });
         });
     });
@@ -1730,6 +1745,7 @@ export function renderBastionGrid() {
             const room = occupied.room;
             const theme = room.isSpecial ? specialColorClasses : colorClasses;
             const colorClass = theme[room.color] || theme.amber;
+            const markerSymbol = room.marker ? (markerIcons[room.marker] || '') : '';
 
             html += `
                 <div draggable="true"
@@ -1743,6 +1759,12 @@ export function renderBastionGrid() {
                                 ${room.isSpecial ? '✨ ' : ''}${room.name}
                             </span>
                             <span class="text-[8px] font-bold text-amber-300">👥 ${room.attendants || 0}</span>
+                        </div>
+                    ` : ''}
+
+                    ${(occupied.isMarkerCell && markerSymbol) ? `
+                        <div class="absolute bottom-0.5 right-0.5 text-xs drop-shadow pointer-events-none z-10">
+                            ${markerSymbol}
                         </div>
                     ` : ''}
                 </div>

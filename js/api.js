@@ -57,8 +57,9 @@ export function sanitizeState(state) {
     if (!state || typeof state !== 'object') return false;
     let modified = false;
 
-    const arrayKeys = ['spells', 'attaques', 'capacites', 'm_saves', 'languages', 'tools', 'openedDescs', 'wildShapes', 'inventaire'];
-    arrayKeys.forEach(key => {
+    // 1. Clés contenant un tableau D'OBJETS (ex: [{ name: "Épée" }, ...])
+    const objectArrayKeys = ['spells', 'attaques', 'capacites', 'wildShapes', 'inventaire'];
+    objectArrayKeys.forEach(key => {
         if (Array.isArray(state[key])) {
             const origLength = state[key].length;
             state[key] = state[key].filter(item => item != null && typeof item === 'object');
@@ -69,6 +70,21 @@ export function sanitizeState(state) {
         }
     });
 
+    // 2. Clés contenant un tableau de VALEURS PRIMITIVES (Strings/Booleans/Numbers, ex: ["Force", "Dextérité"])
+    const primitiveArrayKeys = ['m_saves', 'languages', 'tools', 'openedDescs'];
+    primitiveArrayKeys.forEach(key => {
+        if (Array.isArray(state[key])) {
+            const origLength = state[key].length;
+            // On ne garde que les éléments non nuls
+            state[key] = state[key].filter(item => item != null);
+            if (state[key].length !== origLength) modified = true;
+        } else if (state[key] === null || state[key] === undefined) {
+            state[key] = [];
+            modified = true;
+        }
+    });
+
+    // 3. Inventaire & Sacoches
     if (state.inventory) {
         if (Array.isArray(state.inventory.pochePrincipale)) {
             const orig = state.inventory.pochePrincipale.length;
@@ -82,6 +98,7 @@ export function sanitizeState(state) {
         }
     }
 
+    // 4. Monture
     if (state.mountData) {
         ['inventoryLeft', 'inventoryRight', 'attacks', 'skills'].forEach(key => {
             if (Array.isArray(state.mountData[key])) {

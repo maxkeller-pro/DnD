@@ -1390,12 +1390,12 @@ window.openNewBastionRoomModal = function(x, y) {
     }
 };
 
-// Valide le tracé et ouvre la modale de configuration
+// Validation du formulaire et enregistrement
 window.confirmCustomShape = function() {
-    if (customSelectedCells.length === 0) return;
+    if (!window.customSelectedCells || window.customSelectedCells.length === 0) return;
 
     currentEditingRoomIndex = null;
-    const count = customSelectedCells.length;
+    const count = window.customSelectedCells.length;
     const surface = (count * 2.25).toFixed(1);
 
     const titleEl = document.getElementById('bastion-room-modal-title');
@@ -1407,6 +1407,12 @@ window.confirmCustomShape = function() {
     document.getElementById('bastion-room-name').value = '';
     document.getElementById('bastion-room-attendants').value = 0;
     document.getElementById('bastion-room-color').value = 'amber';
+    
+    const markerSelect = document.getElementById('bastion-room-marker');
+    if (markerSelect) markerSelect.value = '';
+
+    populateMarkerPosOptions(window.customSelectedCells);
+    window.onBastionMarkerTypeChange();
 
     document.getElementById('bastion-room-modal')?.classList.remove('hidden');
 };
@@ -1420,13 +1426,14 @@ window.cancelCustomShape = function() {
 
 // Clic sur une salle EXISTANTE (Édition)
 window.openBastionRoomModal = function(roomIndex) {
-    if (isDrawingMode) return; // Priorité au tracé
+    if (window.isDrawingMode) return; // Priorité au tracé en cours
 
     currentEditingRoomIndex = roomIndex;
     const room = window.state.bastion?.rooms?.[roomIndex];
     if (!room) return;
 
-    const count = room.cells ? room.cells.length : (room.span ? room.span * room.span : 1);
+    const cells = room.cells || [];
+    const count = cells.length || (room.span ? room.span * room.span : 1);
     const surface = (count * 2.25).toFixed(1);
 
     const titleEl = document.getElementById('bastion-room-modal-title');
@@ -1435,9 +1442,28 @@ window.openBastionRoomModal = function(roomIndex) {
     const summaryEl = document.getElementById('bastion-room-summary');
     if (summaryEl) summaryEl.innerText = `${count} case${count > 1 ? 's' : ''} (${surface} m²)`;
 
-    document.getElementById('bastion-room-name').value = room.name || '';
-    document.getElementById('bastion-room-attendants').value = room.attendants || 0;
-    document.getElementById('bastion-room-color').value = room.color || 'amber';
+    // Sélection du nom/type de la salle
+    const nameSelect = document.getElementById('bastion-room-name');
+    if (nameSelect) nameSelect.value = room.name || '';
+
+    // Chargement des serviteurs et de la couleur
+    const attendantsInput = document.getElementById('bastion-room-attendants');
+    if (attendantsInput) attendantsInput.value = room.attendants || 0;
+
+    const colorSelect = document.getElementById('bastion-room-color');
+    if (colorSelect) colorSelect.value = room.color || 'amber';
+
+    // Chargement du marqueur (escalier, trésor, piège, etc.)
+    const markerSelect = document.getElementById('bastion-room-marker');
+    if (markerSelect) markerSelect.value = room.marker || '';
+
+    // Remplissage dynamique des cases cibles de la salle pour le marqueur
+    if (typeof populateMarkerPosOptions === 'function') {
+        populateMarkerPosOptions(cells, room.markerPos);
+    }
+    if (typeof window.onBastionMarkerTypeChange === 'function') {
+        window.onBastionMarkerTypeChange();
+    }
 
     document.getElementById('bastion-room-modal')?.classList.remove('hidden');
 };
@@ -1462,6 +1488,15 @@ window.saveBastionCell = function() {
 
     const attendants = parseInt(document.getElementById('bastion-room-attendants')?.value) || 0;
     const color = document.getElementById('bastion-room-color')?.value || 'amber';
+    const marker = document.getElementById('bastion-room-marker')?.value || '';
+
+    // Récupération des coordonnées de la case choisie pour le marqueur {x, y}
+    let markerPos = null;
+    const markerPosVal = document.getElementById('bastion-room-marker-pos')?.value;
+    if (marker && markerPosVal) {
+        const [mx, my] = markerPosVal.split(',').map(Number);
+        markerPos = { x: mx, y: my };
+    }
 
     if (!name) {
         alert("Veuillez choisir un type de salle.");
@@ -1480,7 +1515,9 @@ window.saveBastionCell = function() {
             name,
             attendants,
             color,
-            isSpecial
+            isSpecial,
+            marker,
+            markerPos
         };
     } else if (selectedCells.length > 0) {
         // Création d'une nouvelle salle multi-cases
@@ -1489,6 +1526,8 @@ window.saveBastionCell = function() {
             attendants,
             color,
             isSpecial,
+            marker,
+            markerPos: markerPos || { x: selectedCells[0].x, y: selectedCells[0].y },
             cells: [...selectedCells]
         });
     }
@@ -1585,6 +1624,29 @@ window.onBastionRoomTypeChange = function(roomName) {
         document.getElementById('bastion-room-color').value = defaultColor;
     }
 };
+
+// Affiche/Masque le sélecteur de case en fonction du marqueur
+window.onBastionMarkerTypeChange = function() {
+    const markerVal = document.getElementById('bastion-room-marker')?.value || '';
+    const container = document.getElementById('bastion-marker-pos-container');
+    if (container) {
+        if (markerVal) container.classList.remove('hidden');
+        else container.classList.add('hidden');
+    }
+};
+
+// Remplit le menu déroulant avec la liste des cases de la salle
+function populateMarkerPosOptions(cells, currentMarkerPos = null) {
+    const posSelect = document.getElementById('bastion-room-marker-pos');
+    if (!posSelect || !cells || cells.length === 0) return;
+
+    posSelect.innerHTML = cells.map((cell, idx) => {
+        const isSelected = currentMarkerPos && currentMarkerPos.x === cell.x && currentMarkerPos.y === cell.y;
+        return `<option value="${cell.x},${cell.y}" ${isSelected ? 'selected' : ''}>
+            Case #${idx + 1} (Col ${cell.x + 1}, Ligne ${cell.y + 1})
+        </option>`;
+    }).join('');
+}
 
 // --- INITIALISATION AU CHARGEMENT DE LA PAGE ---
 

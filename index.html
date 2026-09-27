@@ -1757,6 +1757,33 @@
                     </button>
                 </div>
 
+                <!-- Marqueur d'aménagement -->
+                <div class="space-y-2">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Marqueur
+                            d'aménagement</label>
+                        <select id="bastion-room-marker" onchange="window.onBastionMarkerTypeChange()"
+                            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
+                            <option value="">-- Aucun marqueur --</option>
+                            <option value="stair">🪜 Escalier (Accès étage/cave)</option>
+                            <option value="chest">💎 Trésor / Coffre-fort</option>
+                            <option value="trap">⚠️ Piège / Passage secret</option>
+                            <option value="altar">✝️ Autel / Relique</option>
+                            <option value="portal">🌀 Portail / Rune arcanique</option>
+                        </select>
+                    </div>
+
+                    <!-- Sélecteur de la case cible (s'affiche si un marqueur est choisi) -->
+                    <div id="bastion-marker-pos-container" class="hidden">
+                        <label class="block text-[10px] font-black uppercase text-amber-400/90 mb-1">Position de
+                            l'élément dans la salle</label>
+                        <select id="bastion-room-marker-pos"
+                            class="w-full bg-zinc-950 border border-amber-500/40 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
+                            <!-- Rempli dynamiquement par JS -->
+                        </select>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Nombre d'attendants /
                         Serviteurs</label>
