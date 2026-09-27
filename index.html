@@ -1642,8 +1642,8 @@
         <div
             class="bg-zinc-900 border border-amber-600/30 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
 
-            <!-- En-tête -->
-            <div class="p-5 border-b border-zinc-800 bg-zinc-950 flex justify-between items-center">
+            <!-- En-tête avec Sélecteur d'Étage -->
+            <div class="p-5 border-b border-zinc-800 bg-zinc-950 flex flex-wrap gap-4 justify-between items-center">
                 <div>
                     <h3
                         class="text-amber-500 font-black uppercase tracking-widest text-lg italic flex items-center gap-2">
@@ -1653,6 +1653,24 @@
                         Cliquez sur un emplacement pour aménager ou modifier une pièce
                     </p>
                 </div>
+
+                <!-- Sélecteur d'Étage (0, 1, 2, 3, 4, 5) -->
+                <div
+                    class="flex items-center gap-3 bg-zinc-900 border border-amber-500/30 px-3 py-1.5 rounded-xl shadow-inner">
+                    <span class="text-xs font-black uppercase text-amber-400 flex items-center gap-1">
+                        🏢 Étage :
+                    </span>
+                    <select id="bastion-floor-select" onchange="window.changeBastionFloor(this.value)"
+                        class="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1 text-white text-xs font-bold outline-none focus:border-amber-500 transition cursor-pointer">
+                        <option value="0">Rez-de-Chaussée</option>
+                        <option value="1">1er étage</option>
+                        <option value="2">2ème étage</option>
+                        <option value="3">3ème étage</option>
+                        <option value="4">4ème étage</option>
+                        <option value="5">5ème étage</option>
+                    </select>
+                </div>
+
                 <button onclick="closeBastionModal()"
                     class="text-zinc-500 hover:text-white text-2xl transition">✕</button>
             </div>
@@ -1660,8 +1678,8 @@
             <!-- Zone Grille Interactive -->
             <div class="p-6 overflow-auto flex-1 flex justify-center bg-black/40">
                 <div id="bastion-grid"
-                    class="grid grid-cols-8 gap-1.5 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[700px] aspect-[8/5]">
-                    <!-- Les 40 cases seront générées dynamiquement par le JS -->
+                    class="grid grid-cols-12 grid-rows-12 gap-1 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[720px] aspect-square overflow-auto select-none">
+                    <!-- Les cases seront générées dynamiquement par ui-render.js -->
                 </div>
             </div>
 
@@ -1775,8 +1793,9 @@
 
                     <!-- Sélecteur de la case cible (s'affiche si un marqueur est choisi) -->
                     <div id="bastion-marker-pos-container" class="hidden">
-                        <label class="block text-[10px] font-black uppercase text-amber-400/90 mb-1">Position de
-                            l'élément dans la salle</label>
+                        <label class="block text-[10px] font-black uppercase text-amber-400/90 mb-1">
+                            Position de l'élément dans la salle
+                        </label>
                         <select id="bastion-room-marker-pos"
                             class="w-full bg-zinc-950 border border-amber-500/40 rounded-xl p-3 text-white text-xs outline-none focus:border-amber-500 transition">
                             <!-- Rempli dynamiquement par JS -->

@@ -1662,7 +1662,16 @@ export function renderBastionGrid() {
     const ROWS = 12;
     const TOTAL_CELLS = COLS * ROWS;
 
-    if (!window.state.bastion) window.state.bastion = { rooms: [] };
+    if (!window.state.bastion) window.state.bastion = { currentFloor: 0, rooms: [] };
+
+    // Étage actuellement sélectionné (0 par défaut)
+    const currentFloor = window.state.bastion.currentFloor !== undefined ? window.state.bastion.currentFloor : 0;
+
+    // Synchronisation du selecteur HTML s'il existe
+    const floorSelect = document.getElementById('bastion-floor-select');
+    if (floorSelect && parseInt(floorSelect.value) !== currentFloor) {
+        floorSelect.value = currentFloor;
+    }
 
     gridContainer.className = "grid grid-cols-12 grid-rows-12 gap-1 p-3 bg-zinc-950 border border-zinc-800 rounded-xl min-w-[720px] aspect-square overflow-auto select-none";
 
@@ -1698,8 +1707,11 @@ export function renderBastionGrid() {
     const occupiedMap = new Map();
     const rooms = window.state.bastion.rooms || [];
 
-    // Mapping des cases occupées
+    // Mapping des cases occupées (Filtrage par étage)
     rooms.forEach((room, roomIdx) => {
+        const roomFloor = room.floor !== undefined ? room.floor : 0;
+        if (roomFloor !== currentFloor) return; // Ignore les salles des autres étages
+
         const cells = room.cells || [];
         cells.forEach((cell, cellIdx) => {
             // Affichage du marqueur sur la case exacte sélectionnée (ou par défaut sur la 1ère case)

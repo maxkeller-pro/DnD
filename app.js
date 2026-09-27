@@ -1179,10 +1179,6 @@ window.onClassChange = function(newClass) {
     }
 };
 
-window.openBastionManager = function(){
-
-}
-
 window.onSubclassChange = function(newSubclass) {
     const state = window.state;
     if (!state) return;
@@ -1336,14 +1332,24 @@ window.openBastionManager = function() {
     if (!window.state) return;
     
     if (!window.state.bastion) {
-        window.state.bastion = { rooms: [] };
+        window.state.bastion = { currentFloor: 0, rooms: [] };
     } else if (!window.state.bastion.rooms) {
         window.state.bastion.rooms = [];
+    }
+
+    // Force le retour au Rez-de-Chaussée (Étage 0) à l'ouverture
+    window.state.bastion.currentFloor = 0;
+
+    // Synchronise le sélecteur HTML
+    const floorSelect = document.getElementById('bastion-floor-select');
+    if (floorSelect) {
+        floorSelect.value = "0";
     }
 
     if (typeof renderBastionGrid === 'function') {
         renderBastionGrid();
     }
+    
     document.getElementById('bastion-manager-modal')?.classList.remove('hidden');
 };
 
@@ -1428,6 +1434,11 @@ window.cancelCustomShape = function() {
 window.openBastionRoomModal = function(roomIndex) {
     if (window.isDrawingMode) return; // Priorité au tracé en cours
 
+    const floorSelect = document.getElementById('bastion-floor-select');
+    if (floorSelect && window.state.bastion) {
+        floorSelect.value = window.state.bastion.currentFloor || 0;
+    }
+
     currentEditingRoomIndex = roomIndex;
     const room = window.state.bastion?.rooms?.[roomIndex];
     if (!room) return;
@@ -1482,7 +1493,6 @@ window.saveBastionCell = function() {
     const selectEl = document.getElementById('bastion-room-name');
     const name = selectEl ? selectEl.value : '';
     
-    // Détecte si l'option choisie appartient au groupe des salles spéciales
     const selectedOption = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
     const isSpecial = selectedOption ? selectedOption.getAttribute('data-type') === 'special' : false;
 
@@ -1490,7 +1500,6 @@ window.saveBastionCell = function() {
     const color = document.getElementById('bastion-room-color')?.value || 'amber';
     const marker = document.getElementById('bastion-room-marker')?.value || '';
 
-    // Récupération des coordonnées de la case choisie pour le marqueur {x, y}
     let markerPos = null;
     const markerPosVal = document.getElementById('bastion-room-marker-pos')?.value;
     if (marker && markerPosVal) {
@@ -1503,9 +1512,10 @@ window.saveBastionCell = function() {
         return;
     }
 
-    if (!window.state.bastion) window.state.bastion = { rooms: [] };
+    if (!window.state.bastion) window.state.bastion = { currentFloor: 0, rooms: [] };
     if (!window.state.bastion.rooms) window.state.bastion.rooms = [];
 
+    const currentFloor = window.state.bastion.currentFloor || 0;
     const selectedCells = window.customSelectedCells || [];
 
     if (currentEditingRoomIndex !== null) {
@@ -1517,10 +1527,11 @@ window.saveBastionCell = function() {
             color,
             isSpecial,
             marker,
-            markerPos
+            markerPos,
+            floor: currentFloor // S'assure que l'étage est préservé ou mis à jour
         };
     } else if (selectedCells.length > 0) {
-        // Création d'une nouvelle salle multi-cases
+        // Création d'une nouvelle salle sur l'étage actif
         window.state.bastion.rooms.push({
             name,
             attendants,
@@ -1528,6 +1539,7 @@ window.saveBastionCell = function() {
             isSpecial,
             marker,
             markerPos: markerPos || { x: selectedCells[0].x, y: selectedCells[0].y },
+            floor: currentFloor, // Clé d'étage
             cells: [...selectedCells]
         });
     }
@@ -1647,6 +1659,24 @@ function populateMarkerPosOptions(cells, currentMarkerPos = null) {
         </option>`;
     }).join('');
 }
+
+window.changeBastionFloor = function(floorValue) {
+    if (!window.state.bastion) window.state.bastion = { currentFloor: 0, rooms: [] };
+    
+    // Annule tout tracé en cours lors d'un changement d'étage
+    if (window.isDrawingMode) {
+        window.isDrawingMode = false;
+        window.customSelectedCells = [];
+    }
+
+    const newFloor = parseInt(floorValue) || 0;
+    window.state.bastion.currentFloor = newFloor;
+
+    const indicator = document.getElementById('bastion-floor-indicator');
+    if (indicator) indicator.innerText = `Étage courant : ${newFloor}`;
+
+    if (typeof renderBastionGrid === 'function') renderBastionGrid();
+};
 
 // --- INITIALISATION AU CHARGEMENT DE LA PAGE ---
 
